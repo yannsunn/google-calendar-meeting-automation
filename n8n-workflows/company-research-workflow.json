@@ -1,0 +1,314 @@
+{
+  "name": "Company Research Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "company-research"
+    },
+    {
+      "parameters": {
+        "functionCode": "const companies = new Set();\nconst attendees = $json.attendees || [];\n\nfor (const attendee of attendees) {\n  if (attendee.is_external) {\n    const domain = attendee.email.split('@')[1];\n    if (domain) {\n      companies.add(domain);\n    }\n  }\n}\n\nreturn Array.from(companies).map(domain => ({\n  json: {\n    domain: domain,\n    company_name: domain.split('.')[0],\n    meeting_id: $json.meeting_id\n  }\n}));"
+      },
+      "id": "extract-companies",
+      "name": "Extract Companies",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "={{ $credentials.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.company_name }} company overview business"
+            },
+            {
+              "name": "num",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-company",
+      "name": "Search Company Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3",
+          "name": "Serper API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-flash",
+        "prompt": "Based on the following search results about {{ $json.company_name }}, provide a brief company overview including:\\n\\n1. Company Description (2-3 sentences)\\n2. Main Products/Services\\n3. Target Market\\n4. Recent News or Developments\\n5. Potential Partnership Opportunities\\n\\nSearch Results:\\n{{ $json.organic }}\\n\\nProvide the response in JSON format.",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "ai-analysis",
+      "name": "AI Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "4",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "companies",
+        "columns": "name,domain,description,research_data",
+        "additionalFields": {}
+      },
+      "id": "save-company",
+      "name": "Save Company Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "prompt": "Create a business proposal for a meeting with {{ $json.company_name }} based on the following information:\\n\\nCompany Research:\\n{{ $json.research_data }}\\n\\nMeeting Details:\\n{{ $json.meeting_details }}\\n\\nGenerate:\\n1. Executive Summary\\n2. Value Proposition\\n3. Proposed Solutions\\n4. Implementation Timeline\\n5. Expected Outcomes\\n6. Next Steps\\n\\nFormat as a professional proposal document.",
+        "options": {
+          "temperature": 0.8,
+          "maxTokens": 2000
+        }
+      },
+      "id": "generate-proposal",
+      "name": "Generate Proposal",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "4",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "create",
+        "title": "={{ $json.meeting_title }} - Proposal",
+        "options": {
+          "slides": [
+            {
+              "slideType": "title",
+              "title": "={{ $json.meeting_title }}",
+              "subtitle": "Business Proposal for {{ $json.company_name }}"
+            },
+            {
+              "slideType": "content",
+              "title": "Executive Summary",
+              "content": "={{ $json.executive_summary }}"
+            },
+            {
+              "slideType": "content",
+              "title": "Value Proposition",
+              "content": "={{ $json.value_proposition }}"
+            },
+            {
+              "slideType": "content",
+              "title": "Proposed Solutions",
+              "content": "={{ $json.proposed_solutions }}"
+            },
+            {
+              "slideType": "content",
+              "title": "Timeline",
+              "content": "={{ $json.timeline }}"
+            },
+            {
+              "slideType": "content",
+              "title": "Next Steps",
+              "content": "={{ $json.next_steps }}"
+            }
+          ]
+        }
+      },
+      "id": "create-slides",
+      "name": "Create Google Slides",
+      "type": "n8n-nodes-base.googleSlides",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "6",
+          "name": "Google Slides Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "proposals",
+        "columns": "meeting_id,company_id,title,content,presentation_url,slides_id,ai_model,status",
+        "additionalFields": {}
+      },
+      "id": "save-proposal",
+      "name": "Save Proposal",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "5",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "topic": "workflow-complete",
+        "data": "={{ JSON.stringify($json) }}"
+      },
+      "id": "websocket-notify",
+      "name": "WebSocket Notify",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1850, 300],
+      "credentials": {
+        "redis": {
+          "id": "7",
+          "name": "Redis"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "extract-companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-companies": {
+      "main": [
+        [
+          {
+            "node": "search-company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search-company": {
+      "main": [
+        [
+          {
+            "node": "ai-analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai-analysis": {
+      "main": [
+        [
+          {
+            "node": "save-company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save-company": {
+      "main": [
+        [
+          {
+            "node": "generate-proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-proposal": {
+      "main": [
+        [
+          {
+            "node": "create-slides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create-slides": {
+      "main": [
+        [
+          {
+            "node": "save-proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save-proposal": {
+      "main": [
+        [
+          {
+            "node": "websocket-notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "id": 2
+}

@@ -1,0 +1,17 @@
+{
+  "buildCommand": "cd web && npm install && npm run build",
+  "outputDirectory": "web/.next",
+  "installCommand": "cd web && npm install",
+  "framework": "nextjs",
+  "regions": ["hnd1"],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_N8N_URL": "@n8n_url",
+      "NEXT_PUBLIC_API_URL": "@api_url",
+      "NEXT_PUBLIC_WEBSOCKET_URL": "@websocket_url"
+    }
+  }
+}
