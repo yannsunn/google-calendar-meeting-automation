@@ -111,7 +111,7 @@ export default function Dashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="生成済み提案"
-            value={todayMeetings.filter(m => m.proposals?.length > 0).length}
+            value={todayMeetings.filter(m => m.proposals && m.proposals.length > 0).length}
             icon={<AutoAwesome />}
             color="secondary"
           />
