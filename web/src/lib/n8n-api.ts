@@ -1,0 +1,114 @@
+import axios from 'axios';
+
+const N8N_URL = process.env.N8N_URL || 'https://n8n.srv946785.hstgr.cloud';
+const N8N_API_KEY = process.env.N8N_API_KEY;
+
+// N8N APIクライアント
+const n8nClient = axios.create({
+  baseURL: N8N_URL,
+  headers: {
+    'X-N8N-API-KEY': N8N_API_KEY,
+    'Content-Type': 'application/json',
+  },
+});
+
+// ワークフロー一覧を取得
+export async function getWorkflows() {
+  try {
+    const response = await n8nClient.get('/api/v1/workflows');
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch workflows:', error);
+    throw new Error('Failed to fetch workflows from N8N');
+  }
+}
+
+// 特定のワークフローを取得
+export async function getWorkflow(id: string) {
+  try {
+    const response = await n8nClient.get(`/api/v1/workflows/${id}`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Failed to fetch workflow ${id}:`, error);
+    throw new Error(`Failed to fetch workflow ${id}`);
+  }
+}
+
+// ワークフローを実行
+export async function executeWorkflow(id: string, data?: any) {
+  try {
+    const response = await n8nClient.post(`/api/v1/workflows/${id}/execute`, {
+      data,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Failed to execute workflow ${id}:`, error);
+    throw new Error(`Failed to execute workflow ${id}`);
+  }
+}
+
+// 実行履歴を取得
+export async function getExecutions(workflowId?: string) {
+  try {
+    const params = workflowId ? { workflowId } : {};
+    const response = await n8nClient.get('/api/v1/executions', { params });
+    return response.data.data;
+  } catch (error) {
+    console.error('Failed to fetch executions:', error);
+    throw new Error('Failed to fetch executions');
+  }
+}
+
+// 特定の実行を取得
+export async function getExecution(id: string) {
+  try {
+    const response = await n8nClient.get(`/api/v1/executions/${id}`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Failed to fetch execution ${id}:`, error);
+    throw new Error(`Failed to fetch execution ${id}`);
+  }
+}
+
+// ワークフローをアクティブ/非アクティブに設定
+export async function toggleWorkflow(id: string, active: boolean) {
+  try {
+    const response = await n8nClient.patch(`/api/v1/workflows/${id}`, {
+      active,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Failed to toggle workflow ${id}:`, error);
+    throw new Error(`Failed to toggle workflow ${id}`);
+  }
+}
+
+// Webhook経由でワークフローをトリガー
+export async function triggerWebhook(webhookPath: string, data: any) {
+  try {
+    const response = await axios.post(
+      `${N8N_URL}/webhook/${webhookPath}`,
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to trigger webhook ${webhookPath}:`, error);
+    throw new Error(`Failed to trigger webhook ${webhookPath}`);
+  }
+}
+
+// N8N APIの接続テスト
+export async function testConnection() {
+  try {
+    const response = await n8nClient.get('/api/v1/workflows?limit=1');
+    return { connected: true, message: 'N8N API connection successful' };
+  } catch (error) {
+    console.error('N8N API connection test failed:', error);
+    return { connected: false, message: 'N8N API connection failed' };
+  }
+}

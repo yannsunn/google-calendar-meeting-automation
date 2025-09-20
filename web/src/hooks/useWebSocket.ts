@@ -13,7 +13,14 @@ export function useWebSocket() {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
 
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:3001', {
+    // WebSocketサーバーが設定されていない場合はスキップ
+    if (!process.env.NEXT_PUBLIC_WEBSOCKET_URL) {
+      console.log('WebSocket URL not configured, skipping connection');
+      setIsConnected(false);
+      return;
+    }
+
+    const socketInstance = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL, {
       transports: ['websocket'],
       reconnectionDelay: 1000,
       reconnection: true,

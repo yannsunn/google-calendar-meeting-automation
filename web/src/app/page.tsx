@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material'
 import MeetingList from '@/components/MeetingList'
 import StatsCard from '@/components/StatsCard'
+import N8NWorkflowStatus from '@/components/N8NWorkflowStatus'
 import { useMeetings } from '@/hooks/useMeetings'
 import { useWebSocket } from '@/hooks/useWebSocket'
 
@@ -150,6 +151,10 @@ export default function Dashboard() {
         ) : (
           <MeetingList meetings={todayMeetings} />
         )}
+      </Paper>
+
+      <Paper sx={{ p: 3 }}>
+        <N8NWorkflowStatus />
       </Paper>
     </Container>
   )
