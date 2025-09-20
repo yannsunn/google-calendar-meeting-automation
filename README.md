@@ -1,8 +1,6 @@
-# Googleカレンダータスク通知・打ち合わせ準備自動化システム
+# Google Calendar Meeting Automation System
 
-## 概要
-
-Google CalendarとN8Nを統合した、AIを活用した打ち合わせ準備の完全自動化システムです。毎朝6時に自動実行され、当日の会議情報を取得、参加企業の情報を収集・分析し、AIによる提案資料を自動生成します。
+Google CalendarとN8Nを統合した、AIを活用した打ち合わせ準備の完全自動化システムです。
 
 ## 主要機能
 
@@ -23,63 +21,20 @@ Google CalendarとN8Nを統合した、AIを活用した打ち合わせ準備の
 - **インフラ**: Docker, Docker Compose
 - **監視**: Prometheus, Grafana
 
-## クイックスタート
+## 🚀 クイックスタート
 
-### 前提条件
+1. `.env.template`を`.env`にコピーして必須項目を設定
+2. Vercelにデプロイ ([https://vercel.com/import](https://vercel.com/import))
+3. 環境変数をVercelに設定
 
-- Docker & Docker Compose インストール済み
-- Node.js v18+ インストール済み
-- Google Cloud アカウント
-- 各種APIキー取得済み
+詳細な設定手順は [COMPLETE_SETUP_GUIDE.md](COMPLETE_SETUP_GUIDE.md) を参照してください。
 
-### セットアップ手順
+## 🔑 必要なAPIキー
 
-1. **リポジトリのクローン**
-```bash
-git clone https://github.com/your-org/meeting-automation.git
-cd meeting-automation
-```
-
-2. **環境変数の設定**
-```bash
-cp .env.example .env
-# .envファイルを編集し、必要なAPIキーを設定
-```
-
-3. **Dockerコンテナの起動**
-```bash
-docker-compose up -d
-```
-
-4. **データベースのマイグレーション**
-```bash
-npm run db:migrate
-```
-
-5. **アクセス確認**
-- Web UI: http://localhost:3000
-- N8N: http://localhost:5678
-- Grafana: http://localhost:3002
-
-## APIキー取得方法
-
-### Google APIs
-1. [Google Cloud Console](https://console.cloud.google.com)にアクセス
-2. 新規プロジェクトを作成
-3. Calendar API, Slides APIを有効化
-4. OAuth 2.0認証情報を作成
-
-### Gemini API
-1. [Google MakerSuite](https://makersuite.google.com)にアクセス
-2. APIキーを生成
-
-### Claude API
-1. [Anthropic Console](https://console.anthropic.com)にアクセス
-2. APIキーを生成
-
-### Serper API
-1. [serper.dev](https://serper.dev)で登録
-2. APIキーを取得
+- **N8N API**: https://n8n.srv946785.hstgr.cloud (設定必須)
+- **Google OAuth**: https://console.cloud.google.com
+- **Gemini API**: https://makersuite.google.com/app/apikey
+- **Supabase**: https://supabase.com
 
 ## 使用方法
 
