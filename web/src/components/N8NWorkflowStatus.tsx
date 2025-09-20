@@ -74,7 +74,7 @@ export default function N8NWorkflowStatus() {
       const response = await fetch('/api/n8n/workflows')
       if (!response.ok) {
         const data = await response.json()
-        const errorMessage = (data as any).error || 'Failed to fetch workflows'
+        const errorMessage: string = (data as any).error || 'Failed to fetch workflows'
         throw new Error(errorMessage)
       }
       const data = await response.json()
@@ -95,7 +95,7 @@ export default function N8NWorkflowStatus() {
           setError('N8N APIキーが設定されていません。環境変数にN8N_API_KEYを設定してください。')
           return
         }
-        const errorMsg = (data as any).error || 'Failed to fetch executions'
+        const errorMsg: string = (data as any).error || 'Failed to fetch executions'
         throw new Error(errorMsg)
       }
       const data = await response.json()
