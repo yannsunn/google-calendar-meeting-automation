@@ -78,7 +78,8 @@ export default function N8NWorkflowStatus() {
         throw err
       }
       const data = await response.json()
-      setWorkflows(data)
+      // dataが配列でない場合は空配列にする
+      setWorkflows(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error fetching workflows')
     } finally {
@@ -99,7 +100,8 @@ export default function N8NWorkflowStatus() {
         throw err2
       }
       const data = await response.json()
-      setExecutions(data)
+      // dataが配列でない場合は空配列にする
+      setExecutions(Array.isArray(data) ? data : [])
       setError(null)
     } catch (err) {
       console.error('Error fetching executions:', err)
@@ -219,7 +221,7 @@ export default function N8NWorkflowStatus() {
           ワークフロー一覧
         </Typography>
         <List>
-          {workflows.map((workflow) => (
+          {workflows && workflows.length > 0 ? workflows.map((workflow) => (
             <ListItem key={workflow.id}>
               <ListItemText
                 primary={workflow.name}
@@ -259,14 +261,18 @@ export default function N8NWorkflowStatus() {
                 </Tooltip>
               </ListItemSecondaryAction>
             </ListItem>
-          ))}
+          )) : (
+            <ListItem>
+              <ListItemText primary="ワークフローがありません" />
+            </ListItem>
+          )}
         </List>
 
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           最近の実行
         </Typography>
         <List>
-          {executions.slice(0, 5).map((execution) => (
+          {executions && executions.length > 0 ? executions.slice(0, 5).map((execution) => (
             <ListItem key={execution.id}>
               <ListItemText
                 primary={
@@ -295,7 +301,11 @@ export default function N8NWorkflowStatus() {
                 }
               />
             </ListItem>
-          ))}
+          )) : (
+            <ListItem>
+              <ListItemText primary="実行履歴がありません" />
+            </ListItem>
+          )}
         </List>
 
         <Dialog
@@ -309,7 +319,7 @@ export default function N8NWorkflowStatus() {
           </DialogTitle>
           <DialogContent>
             <List>
-              {executions
+              {executions && executions.length > 0 ? executions
                 .filter(e => selectedWorkflow ? e.workflowId === selectedWorkflow : true)
                 .map((execution) => (
                   <ListItem key={execution.id}>
@@ -329,7 +339,11 @@ export default function N8NWorkflowStatus() {
                       }
                     />
                   </ListItem>
-                ))}
+                )) : (
+                  <ListItem>
+                    <ListItemText primary="実行履歴がありません" />
+                  </ListItem>
+                )}
             </List>
           </DialogContent>
           <DialogActions>
