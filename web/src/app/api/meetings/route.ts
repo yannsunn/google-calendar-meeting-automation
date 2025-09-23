@@ -7,6 +7,12 @@ const pool = new Pool({
 
 export async function GET(request: NextRequest) {
   try {
+    // DATABASE_URLが設定されていない場合は空配列を返す
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL is not configured')
+      return NextResponse.json([])
+    }
+
     const searchParams = request.nextUrl.searchParams
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
@@ -35,12 +41,11 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(query, [date])
 
     return NextResponse.json(result.rows)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching meetings:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch meetings' },
-      { status: 500 }
-    )
+    // エラー時でも空配列を返すことでフロントエンドのエラーを防ぐ
+    // ステータスコードは500を返してエラーであることを示す
+    return NextResponse.json([], { status: 500 })
   }
 }
 
