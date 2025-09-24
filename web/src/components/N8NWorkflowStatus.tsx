@@ -73,15 +73,16 @@ export default function N8NWorkflowStatus() {
     try {
       const response = await fetch('/api/n8n/workflows')
       if (!response.ok) {
-        const data = await response.json()
-        const err = new (Error as any)((data as any).error || 'Failed to fetch workflows')
-        throw err
+        const data: any = await response.json()
+        const errorMessage = data.error || 'Failed to fetch workflows'
+        setError(errorMessage)
+        return
       }
       const data = await response.json()
       // dataが配列でない場合は空配列にする
       setWorkflows(Array.isArray(data) ? data : [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching workflows')
+    } catch (err: any) {
+      setError(err?.message || String(err) || 'Error fetching workflows')
     } finally {
       setLoading(false)
     }
@@ -91,19 +92,19 @@ export default function N8NWorkflowStatus() {
     try {
       const response = await fetch('/api/n8n/executions')
       if (!response.ok) {
-        const data = await response.json()
+        const data: any = await response.json()
         if (data.error === 'N8N_API_KEY is not configured') {
           setError('N8N APIキーが設定されていません。環境変数にN8N_API_KEYを設定してください。')
           return
         }
-        const err2 = new (Error as any)((data as any).error || 'Failed to fetch executions')
-        throw err2
+        console.error('Failed to fetch executions:', data.error)
+        return
       }
       const data = await response.json()
       // dataが配列でない場合は空配列にする
       setExecutions(Array.isArray(data) ? data : [])
       setError(null)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching executions:', err)
     }
   }
@@ -116,10 +117,11 @@ export default function N8NWorkflowStatus() {
         body: JSON.stringify({ workflowId }),
       })
       if (!response.ok) {
-        throw new Error('Failed to execute workflow')
+        console.error('Failed to execute workflow')
+        return
       }
       await fetchExecutions()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error executing workflow:', err)
     }
   }

@@ -16,10 +16,13 @@ const n8nClient = axios.create({
 export async function getWorkflows() {
   try {
     const response = await n8nClient.get('/api/v1/workflows');
-    return response.data.data;
+    // N8N APIは data プロパティ内に配列を返す
+    const workflows = response.data?.data || response.data;
+    return Array.isArray(workflows) ? workflows : [];
   } catch (error) {
     console.error('Failed to fetch workflows:', error);
-    throw new Error('Failed to fetch workflows from N8N');
+    // エラー時は空配列を返す
+    return [];
   }
 }
 
@@ -52,10 +55,13 @@ export async function getExecutions(workflowId?: string) {
   try {
     const params = workflowId ? { workflowId } : {};
     const response = await n8nClient.get('/api/v1/executions', { params });
-    return response.data.data;
+    // N8N APIは data プロパティ内に配列を返す
+    const executions = response.data?.data || response.data;
+    return Array.isArray(executions) ? executions : [];
   } catch (error) {
     console.error('Failed to fetch executions:', error);
-    throw new Error('Failed to fetch executions');
+    // エラー時は空配列を返す
+    return [];
   }
 }
 

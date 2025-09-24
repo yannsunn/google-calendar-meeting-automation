@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWorkflows, executeWorkflow } from '@/lib/n8n-api';
-import { mockWorkflows } from '@/lib/n8n-mock';
 
 export async function GET(request: NextRequest) {
   try {
     if (!process.env.N8N_API_KEY) {
-      // APIキーが設定されていない場合はモックデータを返す
-      console.warn('N8N_API_KEY not configured, returning mock data');
-      return NextResponse.json(mockWorkflows);
+      return NextResponse.json(
+        { error: 'N8N_API_KEY is not configured' },
+        { status: 500 }
+      );
     }
 
     const workflows = await getWorkflows();
-    // ワークフローが配列でない場合は空配列を返す
-    return NextResponse.json(Array.isArray(workflows) ? workflows : []);
-  } catch (error: any) {
+    return NextResponse.json(workflows);
+  } catch (error) {
     console.error('Error fetching workflows:', error);
-    // エラー時はモックデータを返す
-    return NextResponse.json(mockWorkflows);
+    return NextResponse.json(
+      { error: 'Failed to fetch workflows' },
+      { status: 500 }
+    );
   }
 }
 
@@ -24,7 +25,8 @@ export async function POST(request: NextRequest) {
   try {
     if (!process.env.N8N_API_KEY) {
       return NextResponse.json(
-        { success: true, message: 'Mock execution triggered' }
+        { error: 'N8N_API_KEY is not configured' },
+        { status: 500 }
       );
     }
 
@@ -40,10 +42,11 @@ export async function POST(request: NextRequest) {
 
     const result = await executeWorkflow(workflowId, data);
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error executing workflow:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to execute workflow' }
+      { error: 'Failed to execute workflow' },
+      { status: 500 }
     );
   }
 }

@@ -43,9 +43,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result.rows)
   } catch (error: any) {
     console.error('Error fetching meetings:', error)
-    // エラー時でも空配列を返すことでフロントエンドのエラーを防ぐ
-    // ステータスコードは500を返してエラーであることを示す
-    return NextResponse.json([], { status: 500 })
+    // データベース接続エラーでもフロントエンドが動作するように空配列を返す
+    return NextResponse.json([])
   }
 }
 
