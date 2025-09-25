@@ -14,7 +14,13 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const startDate = searchParams.get('startDate') || searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const days = parseInt(searchParams.get('days') || '7') // デフォルトは7日間
+
+    // 終了日を計算
+    const start = new Date(startDate)
+    const end = new Date(start)
+    end.setDate(end.getDate() + days)
 
     const query = `
       SELECT
@@ -33,12 +39,12 @@ export async function GET(request: NextRequest) {
       FROM meetings m
       LEFT JOIN attendees a ON m.id = a.meeting_id
       LEFT JOIN proposals p ON m.id = p.meeting_id
-      WHERE DATE(m.start_time) = $1
+      WHERE m.start_time >= $1 AND m.start_time < $2
       GROUP BY m.id
       ORDER BY m.start_time ASC
     `
 
-    const result = await pool.query(query, [date])
+    const result = await pool.query(query, [start.toISOString(), end.toISOString()])
 
     return NextResponse.json(result.rows)
   } catch (error: any) {
