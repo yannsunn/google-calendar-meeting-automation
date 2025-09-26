@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { syncCalendarEvents } from '@/lib/calendar-sync'
+import { syncCalendarEvents } from '@/lib/calendar-sync-service-account'
 
 // Vercel Cron Job用のエンドポイント
 // vercel.jsonで設定: 1時間ごとに実行

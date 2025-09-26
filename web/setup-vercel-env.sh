@@ -1,59 +1,26 @@
 #!/bin/bash
+# Vercel環境変数設定スクリプト
 
-# Vercel環境変数自動設定スクリプト
-echo "🚀 Vercel環境変数の自動設定を開始します"
+echo "🔧 Vercel環境変数を設定します..."
 
-# .envファイルを読み込む
-if [ ! -f .env ]; then
-  echo "❌ .envファイルが見つかりません"
-  exit 1
+# APIキー方式（公開カレンダー用）
+echo "APIキーを入力（省略可）:"
+read GOOGLE_API_KEY
+if [ ! -z "$GOOGLE_API_KEY" ]; then
+  echo "$GOOGLE_API_KEY" | vercel env add GOOGLE_API_KEY production --force
 fi
 
-# Vercel CLIがインストールされているか確認
-if ! command -v vercel &> /dev/null; then
-  echo "📦 Vercel CLIをインストール中..."
-  npm install -g vercel
+# 既存のトークンを使用する場合
+echo "アクセストークンを入力（省略可）:"
+read GOOGLE_ACCESS_TOKEN
+if [ ! -z "$GOOGLE_ACCESS_TOKEN" ]; then
+  echo "$GOOGLE_ACCESS_TOKEN" | vercel env add GOOGLE_ACCESS_TOKEN production --force
 fi
 
-# Vercelにログイン
-echo "🔐 Vercelにログインしてください..."
-vercel login
+echo "リフレッシュトークンを入力（省略可）:"
+read GOOGLE_REFRESH_TOKEN
+if [ ! -z "$GOOGLE_REFRESH_TOKEN" ]; then
+  echo "$GOOGLE_REFRESH_TOKEN" | vercel env add GOOGLE_REFRESH_TOKEN production --force
+fi
 
-# プロジェクトをリンク
-echo "🔗 Vercelプロジェクトをリンク中..."
-vercel link
-
-# 環境変数を設定
-echo "⚙️ 環境変数を設定中..."
-
-# Production環境用
-vercel env add N8N_URL production < <(echo "https://n8n.srv946785.hstgr.cloud")
-vercel env add N8N_API_KEY production < <(grep N8N_API_KEY .env | cut -d '=' -f2)
-vercel env add N8N_WEBHOOK_BASE_URL production < <(echo "https://n8n.srv946785.hstgr.cloud/webhook")
-vercel env add NEXT_PUBLIC_SUPABASE_URL production < <(grep NEXT_PUBLIC_SUPABASE_URL .env | cut -d '=' -f2)
-vercel env add SUPABASE_SERVICE_ROLE_KEY production < <(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d '=' -f2)
-vercel env add GEMINI_API_KEY production < <(grep GEMINI_API_KEY .env | cut -d '=' -f2)
-
-# Preview環境用
-vercel env add N8N_URL preview < <(echo "https://n8n.srv946785.hstgr.cloud")
-vercel env add N8N_API_KEY preview < <(grep N8N_API_KEY .env | cut -d '=' -f2)
-vercel env add N8N_WEBHOOK_BASE_URL preview < <(echo "https://n8n.srv946785.hstgr.cloud/webhook")
-vercel env add NEXT_PUBLIC_SUPABASE_URL preview < <(grep NEXT_PUBLIC_SUPABASE_URL .env | cut -d '=' -f2)
-vercel env add SUPABASE_SERVICE_ROLE_KEY preview < <(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d '=' -f2)
-vercel env add GEMINI_API_KEY preview < <(grep GEMINI_API_KEY .env | cut -d '=' -f2)
-
-# Development環境用
-vercel env add N8N_URL development < <(echo "https://n8n.srv946785.hstgr.cloud")
-vercel env add N8N_API_KEY development < <(grep N8N_API_KEY .env | cut -d '=' -f2)
-vercel env add N8N_WEBHOOK_BASE_URL development < <(echo "https://n8n.srv946785.hstgr.cloud/webhook")
-vercel env add NEXT_PUBLIC_SUPABASE_URL development < <(grep NEXT_PUBLIC_SUPABASE_URL .env | cut -d '=' -f2)
-vercel env add SUPABASE_SERVICE_ROLE_KEY development < <(grep SUPABASE_SERVICE_ROLE_KEY .env | cut -d '=' -f2)
-vercel env add GEMINI_API_KEY development < <(grep GEMINI_API_KEY .env | cut -d '=' -f2)
-
-echo "✅ 環境変数の設定が完了しました"
-
-# 再デプロイ
-echo "🚀 Vercelで再デプロイ中..."
-vercel --prod
-
-echo "✅ すべての設定が完了しました！"
+echo "✅ 設定完了"

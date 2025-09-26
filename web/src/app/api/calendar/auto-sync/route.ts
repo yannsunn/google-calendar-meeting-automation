@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { syncCalendarEvents } from '@/lib/calendar-sync'
+import { syncCalendarEvents } from '@/lib/calendar-sync-service-account'
 
 // APIエンドポイント
 export async function POST(request: NextRequest) {
