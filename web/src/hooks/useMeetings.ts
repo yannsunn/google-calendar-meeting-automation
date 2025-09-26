@@ -27,7 +27,8 @@ interface Meeting {
 
 const fetchMeetings = async (): Promise<Meeting[]> => {
   try {
-    const { data } = await axios.get('/api/meetings')
+    // calendar/eventsエンドポイントを使用
+    const { data } = await axios.get('/api/calendar/events')
     // データが配列でない場合は空配列を返す
     return Array.isArray(data) ? data : []
   } catch (error) {
