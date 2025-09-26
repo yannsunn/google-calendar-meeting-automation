@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
     console.log('✅ Cron: 同期完了', result)
 
     return NextResponse.json({
-      success: true,
       message: 'Calendar sync completed',
       ...result
     })
