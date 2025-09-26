@@ -9,9 +9,6 @@
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_N8N_URL": "@n8n_url",
-      "NEXT_PUBLIC_API_URL": "@api_url",
-      "NEXT_PUBLIC_WEBSOCKET_URL": "@websocket_url"
     }
   }
 }
