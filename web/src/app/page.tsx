@@ -26,6 +26,7 @@ import {
 import MeetingList from '@/components/MeetingList'
 import StatsCard from '@/components/StatsCard'
 import N8NWorkflowStatus from '@/components/N8NWorkflowStatus'
+import CalendarSyncButton from '@/components/CalendarSyncButton'
 import { useMeetings } from '@/hooks/useMeetings'
 import { useWebSocket } from '@/hooks/useWebSocket'
 
@@ -65,7 +66,8 @@ export default function Dashboard() {
         <Typography variant="h3" component="h1" gutterBottom>
           打ち合わせ準備自動化システム
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <CalendarSyncButton />
           <Chip
             icon={isConnected ? <CheckCircle /> : <Schedule />}
             label={isConnected ? 'Connected' : 'Connecting...'}

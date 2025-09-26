@@ -1,0 +1,95 @@
+{
+  "name": "Supabaseカレンダー同期（シンプル版）",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "1時間ごとに実行",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://web-fnjm8qeyq-yasuus-projects.vercel.app/api/calendar/sync",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "カレンダー同期APIを呼び出し",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "={{$json.success ? 'success' : 'failed'}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.message}}"
+            }
+          ],
+          "number": [
+            {
+              "name": "events_synced",
+              "value": "={{$json.eventsCount}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "結果を記録",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "1時間ごとに実行": {
+      "main": [
+        [
+          {
+            "node": "カレンダー同期APIを呼び出し",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "カレンダー同期APIを呼び出し": {
+      "main": [
+        [
+          {
+            "node": "結果を記録",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
