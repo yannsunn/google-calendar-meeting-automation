@@ -34,6 +34,11 @@ export default function Dashboard() {
   const { meetings, isLoading, error, refetch } = useMeetings()
   const { isConnected, lastMessage } = useWebSocket()
   const [processingWorkflow, setProcessingWorkflow] = useState(false)
+  const [lastSyncTime, setLastSyncTime] = useState<string>('')
+
+  useEffect(() => {
+    setLastSyncTime(new Date().toLocaleTimeString('ja-JP'))
+  }, [])
 
   const todayMeetings = meetings?.filter(meeting => {
     const meetingDate = new Date(meeting.start_time)
@@ -74,9 +79,11 @@ export default function Dashboard() {
             color={isConnected ? 'success' : 'default'}
             size="small"
           />
-          <Typography variant="body2" color="text.secondary">
-            Last sync: {new Date().toLocaleTimeString('ja-JP')}
-          </Typography>
+          {lastSyncTime && (
+            <Typography variant="body2" color="text.secondary">
+              Last sync: {lastSyncTime}
+            </Typography>
+          )}
         </Box>
       </Box>
 

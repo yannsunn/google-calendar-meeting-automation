@@ -60,3 +60,4 @@ n8n-workflows/*.backup.json
 *.pem
 *.key
 *.crt
+.vercel

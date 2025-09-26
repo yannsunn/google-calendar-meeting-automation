@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, CircularProgress, Alert, Snackbar } from '@mui/material'
 import SyncIcon from '@mui/icons-material/Sync'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -10,6 +10,11 @@ export default function CalendarSyncButton() {
   const [syncing, setSyncing] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSync = async () => {
     setSyncing(true)
@@ -23,7 +28,9 @@ export default function CalendarSyncButton() {
           type: 'success',
           text: `✅ ${response.data.eventsCount}件のイベントを同期しました`
         })
-        setLastSync(new Date().toLocaleString('ja-JP'))
+        if (mounted) {
+          setLastSync(new Date().toLocaleString('ja-JP'))
+        }
       } else {
         throw new Error(response.data.error)
       }
@@ -50,7 +57,7 @@ export default function CalendarSyncButton() {
           {syncing ? 'カレンダー同期中...' : 'カレンダーを同期'}
         </Button>
 
-        {lastSync && (
+        {mounted && lastSync && (
           <span style={{ fontSize: '14px', color: '#666' }}>
             最終同期: {lastSync}
           </span>
