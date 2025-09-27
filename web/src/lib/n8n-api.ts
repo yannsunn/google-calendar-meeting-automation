@@ -1,20 +1,25 @@
 import axios from 'axios';
 
 const N8N_URL = process.env.N8N_URL || 'https://n8n.srv946785.hstgr.cloud';
-const N8N_API_KEY = process.env.N8N_API_KEY;
 
-// N8N APIクライアント
-const n8nClient = axios.create({
-  baseURL: N8N_URL,
-  headers: {
-    'X-N8N-API-KEY': N8N_API_KEY,
-    'Content-Type': 'application/json',
-  },
-});
+// N8N APIクライアントを動的に作成
+function createN8NClient() {
+  // 環境変数から改行を除去
+  const apiKey = process.env.N8N_API_KEY?.trim();
+
+  return axios.create({
+    baseURL: N8N_URL,
+    headers: {
+      'X-N8N-API-KEY': apiKey || '',
+      'Content-Type': 'application/json',
+    },
+  });
+}
 
 // ワークフロー一覧を取得
 export async function getWorkflows() {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.get('/api/v1/workflows');
     // N8N APIは data プロパティ内に配列を返す
     const workflows = response.data?.data || response.data;
@@ -29,6 +34,7 @@ export async function getWorkflows() {
 // 特定のワークフローを取得
 export async function getWorkflow(id: string) {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.get(`/api/v1/workflows/${id}`);
     return response.data.data;
   } catch (error) {
@@ -40,6 +46,7 @@ export async function getWorkflow(id: string) {
 // ワークフローを実行
 export async function executeWorkflow(id: string, data?: any) {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.post(`/api/v1/workflows/${id}/execute`, {
       data,
     });
@@ -53,6 +60,7 @@ export async function executeWorkflow(id: string, data?: any) {
 // 実行履歴を取得
 export async function getExecutions(workflowId?: string) {
   try {
+    const n8nClient = createN8NClient();
     const params = workflowId ? { workflowId } : {};
     const response = await n8nClient.get('/api/v1/executions', { params });
     // N8N APIは data プロパティ内に配列を返す
@@ -68,6 +76,7 @@ export async function getExecutions(workflowId?: string) {
 // 特定の実行を取得
 export async function getExecution(id: string) {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.get(`/api/v1/executions/${id}`);
     return response.data.data;
   } catch (error) {
@@ -79,6 +88,7 @@ export async function getExecution(id: string) {
 // ワークフローをアクティブ/非アクティブに設定
 export async function toggleWorkflow(id: string, active: boolean) {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.patch(`/api/v1/workflows/${id}`, {
       active,
     });
