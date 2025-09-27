@@ -121,6 +121,7 @@ export async function triggerWebhook(webhookPath: string, data: any) {
 // N8N APIの接続テスト
 export async function testConnection() {
   try {
+    const n8nClient = createN8NClient();
     const response = await n8nClient.get('/api/v1/workflows?limit=1');
     return { connected: true, message: 'N8N API connection successful' };
   } catch (error) {
