@@ -28,11 +28,9 @@ import StatsCard from '@/components/StatsCard'
 import N8NWorkflowStatus from '@/components/N8NWorkflowStatus'
 import CalendarSyncButton from '@/components/CalendarSyncButton'
 import { useMeetings } from '@/hooks/useMeetings'
-import { useWebSocket } from '@/hooks/useWebSocket'
 
 export default function Dashboard() {
   const { meetings, isLoading, error, refetch } = useMeetings()
-  const { isConnected, lastMessage } = useWebSocket()
   const [processingWorkflow, setProcessingWorkflow] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<string>('')
 
@@ -73,12 +71,6 @@ export default function Dashboard() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <CalendarSyncButton />
-          <Chip
-            icon={isConnected ? <CheckCircle /> : <Schedule />}
-            label={isConnected ? 'Connected' : 'Connecting...'}
-            color={isConnected ? 'success' : 'default'}
-            size="small"
-          />
           {lastSyncTime && (
             <Typography variant="body2" color="text.secondary">
               Last sync: {lastSyncTime}
