@@ -42,7 +42,7 @@ export function useMeetings() {
   const { data: meetings, isLoading, error, refetch } = useQuery({
     queryKey: ['meetings'],
     queryFn: fetchMeetings,
-    refetchInterval: 60000,
+    refetchInterval: 3 * 60 * 60 * 1000, // 3時間ごと
     refetchOnWindowFocus: true,
   })
 
