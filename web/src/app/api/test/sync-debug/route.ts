@@ -3,7 +3,14 @@ import { google } from 'googleapis'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
-  const results = {
+  const results: {
+    step1_auth: boolean
+    step2_fetch: boolean
+    step3_save: boolean
+    events: any[]
+    saveErrors: any[]
+    savedEvents: any[]
+  } = {
     step1_auth: false,
     step2_fetch: false,
     step3_save: false,
