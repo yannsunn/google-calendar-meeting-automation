@@ -1,0 +1,219 @@
+{
+  "name": "Google Calendar AI自動化 - エージェント統合版",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "毎朝6時実行",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "schedule"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "timeMin", "value": "={{new Date().toISOString()}}"},
+            {"name": "timeMax", "value": "={{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}}"},
+            {"name": "singleEvents", "value": "true"},
+            {"name": "orderBy", "value": "startTime"},
+            {"name": "maxResults", "value": "100"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer ya29.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Google Calendar API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "id": "googleCalendarApi"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst events = items[0].json.items || [];\nconst internalDomains = ['gmail.com', 'googlemail.com', 'yasuus-projects.vercel.app'];\n\nreturn events.map(event => {\n  const attendees = (event.attendees || []).map(a => ({\n    email: a.email,\n    name: a.displayName || a.email.split('@')[0],\n    response: a.responseStatus || 'needsAction',\n    is_organizer: a.organizer || false,\n    domain: a.email.split('@')[1]\n  }));\n  \n  const externalAttendees = attendees.filter(a => !internalDomains.includes(a.domain));\n  const start = new Date(event.start?.dateTime || event.start?.date);\n  const end = new Date(event.end?.dateTime || event.end?.date);\n  const durationMinutes = (end - start) / 1000 / 60;\n  \n  return {\n    json: {\n      event_id: event.id,\n      summary: event.summary || 'タイトルなし',\n      description: event.description || '',\n      start_time: event.start?.dateTime || event.start?.date,\n      end_time: event.end?.dateTime || event.end?.date,\n      location: event.location || '',\n      meeting_url: event.hangoutLink || '',\n      organizer_email: event.organizer?.email || '',\n      attendees: attendees,\n      external_attendees: externalAttendees,\n      has_external_attendees: externalAttendees.length > 0,\n      external_count: externalAttendees.length,\n      duration_minutes: durationMinutes,\n      is_important: durationMinutes >= 30,\n      status: event.status || 'confirmed',\n      raw_data: event,\n      synced_at: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "name": "データ整形+外部判定",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "id": "formatData"
+    },
+    {
+      "parameters": {
+        "url": "https://dpqsipbppdemgfwuihjr.supabase.co/rest/v1/calendar_events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"},
+            {"name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "resolution=merge-duplicates"}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {"parameters": [{"name": "={{$json}}"}]},
+        "options": {}
+      },
+      "name": "Supabase保存",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300],
+      "id": "saveToSupabase"
+    },
+    {
+      "parameters": {
+        "jsCode": "const meetingData = $json;\nconst externalAttendees = meetingData.external_attendees || [];\n\nif (externalAttendees.length === 0) {\n  return [{\n    json: {\n      ...meetingData,\n      ai_task: '会議の要約と準備項目の提案',\n      context: `会議タイトル: ${meetingData.summary}\\n開始時刻: ${meetingData.start_time}\\n説明: ${meetingData.description || 'なし'}\\n参加者: ${meetingData.attendees.map(a => a.name).join(', ')}`\n    }\n  }];\n}\n\nconst companies = {};\nexternalAttendees.forEach(attendee => {\n  const domain = attendee.domain;\n  if (!companies[domain]) {\n    companies[domain] = {\n      domain: domain,\n      company_name: domain.replace(/\\.(com|co\\.jp|jp|net|org)$/, ''),\n      attendees: []\n    };\n  }\n  companies[domain].attendees.push(attendee);\n});\n\nconst companyList = Object.values(companies);\n\nreturn companyList.map(company => ({\n  json: {\n    ...meetingData,\n    company_domain: company.domain,\n    company_name: company.company_name,\n    attendees_from_company: company.attendees,\n    ai_task: '企業分析と提案生成',\n    context: `会議タイトル: ${meetingData.summary}\\n開始時刻: ${meetingData.start_time}\\n企業名: ${company.company_name}\\nドメイン: ${company.domain}\\n参加者: ${company.attendees.map(a => a.name).join(', ')}`\n  }\n}));"
+      },
+      "name": "AIタスク準備",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300],
+      "id": "prepareAITask"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.context}}\\n\\n上記の情報を基に、以下のタスクを実行してください：\\n\\nタスク: {{$json.ai_task}}\\n\\n【外部参加者がいる場合】\\n1. Web検索で企業情報を収集\\n2. 企業の概要、主要事業、業界・規模、特徴を分析\\n3. 以下の4つの観点から具体的な提案を作成：\\n   - 業務効率化ツールの提案\\n   - ホームページ作成・改善提案\\n   - チャットボット導入提案\\n   - AI活用提案\\n4. 各提案には導入メリット、想定コスト、導入期間を含める\\n\\n【外部参加者がいない場合】\\n1. 会議の目的と内容を要約\\n2. 会議前に準備すべき項目をリスト化\\n3. 会議後のフォローアップ項目を提案\\n\\n結果は日本語で、構造化されたJSON形式で返してください。",
+        "options": {
+          "systemMessage": "あなたは企業分析とビジネス提案の専門家です。以下の能力を持っています：\\n\\n1. Web検索による企業情報収集\\n2. 企業の事業内容、業界動向の分析\\n3. AI・業務効率化ツールの提案作成\\n4. 会議準備のサポート\\n\\n常に具体的で実行可能な提案を、数値やコストを含めて提供してください。",
+          "maxIterations": 10
+        }
+      },
+      "name": "AIエージェント",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1250, 300],
+      "id": "aiAgent"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 2000
+        }
+      },
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [1250, 480],
+      "id": "openAIModel"
+    },
+    {
+      "parameters": {
+        "descriptionType": "auto",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "q", "value": "={{$fromAI('search_query', '企業名や検索クエリ', 'string')}}"},
+            {"name": "num", "value": "5"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "X-API-KEY", "value": "f6810973e3c74295414b3c36713ac6a37c62b9e3"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Web検索ツール",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1050, 480],
+      "id": "webSearchTool"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $json.output || '';\nconst originalData = $node['AIタスク準備'].json;\n\nlet parsedOutput;\ntry {\n  parsedOutput = typeof aiOutput === 'string' ? JSON.parse(aiOutput) : aiOutput;\n} catch (e) {\n  parsedOutput = { raw_output: aiOutput };\n}\n\nreturn [{\n  json: {\n    event_id: originalData.event_id,\n    company_domain: originalData.company_domain || 'internal',\n    company_name: originalData.company_name || '社内会議',\n    company_analysis: parsedOutput.company_analysis || parsedOutput.summary || '',\n    proposal_content: parsedOutput.proposal || parsedOutput.preparation || parsedOutput.raw_output || '',\n    search_results: parsedOutput.search_results || {},\n    ai_agent_output: aiOutput,\n    status: 'generated',\n    generated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "AI出力整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "id": "formatAIOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://dpqsipbppdemgfwuihjr.supabase.co/rest/v1/proposals",
+        "httpMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"},
+            {"name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=representation"}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {"parameters": [{"name": "={{$json}}"}]},
+        "options": {}
+      },
+      "name": "提案保存",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 300],
+      "id": "saveProposal"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {"name": "status", "value": "complete"},
+            {"name": "message", "value": "AI分析・提案生成完了"}
+          ],
+          "number": [
+            {"name": "processed_meetings", "value": "={{$items('Supabase保存').length}}"},
+            {"name": "proposals_generated", "value": "={{$items('提案保存').length}}"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "実行結果",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1850, 300],
+      "id": "result"
+    }
+  ],
+  "connections": {
+    "毎朝6時実行": {"main": [[{"node": "Google Calendar API", "type": "main", "index": 0}]]},
+    "Google Calendar API": {"main": [[{"node": "データ整形+外部判定", "type": "main", "index": 0}]]},
+    "データ整形+外部判定": {"main": [[{"node": "Supabase保存", "type": "main", "index": 0}]]},
+    "Supabase保存": {"main": [[{"node": "AIタスク準備", "type": "main", "index": 0}]]},
+    "AIタスク準備": {"main": [[{"node": "AIエージェント", "type": "main", "index": 0}]]},
+    "AIエージェント": {"main": [[{"node": "AI出力整形", "type": "main", "index": 0}]]},
+    "OpenAI Chat Model": {"ai_languageModel": [[{"node": "AIエージェント", "type": "ai_languageModel", "index": 0}]]},
+    "Web検索ツール": {"ai_tool": [[{"node": "AIエージェント", "type": "ai_tool", "index": 0}]]},
+    "AI出力整形": {"main": [[{"node": "提案保存", "type": "main", "index": 0}]]},
+    "提案保存": {"main": [[{"node": "実行結果", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}

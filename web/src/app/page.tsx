@@ -25,7 +25,6 @@ import {
 } from '@mui/icons-material'
 import MeetingList from '@/components/MeetingList'
 import StatsCard from '@/components/StatsCard'
-import N8NWorkflowStatus from '@/components/N8NWorkflowStatus'
 import CalendarSyncButton from '@/components/CalendarSyncButton'
 import { useMeetings } from '@/hooks/useMeetings'
 
@@ -43,6 +42,13 @@ export default function Dashboard() {
     const today = new Date()
     return meetingDate.toDateString() === today.toDateString()
   }) || []
+
+  const uniqueCompaniesCount = new Set(
+    todayMeetings
+      .flatMap(m => m.attendees || [])
+      .map(a => a.company_id)
+      .filter(Boolean)
+  ).size
 
   const handleGenerateProposals = async () => {
     setProcessingWorkflow(true)
@@ -105,7 +111,7 @@ export default function Dashboard() {
         <Grid item xs={12} sm={6} md={3}>
           <StatsCard
             title="参加企業"
-            value={new Set(todayMeetings.flatMap(m => m.attendees?.map(a => a.company_id) || [])).size}
+            value={uniqueCompaniesCount}
             icon={<Business />}
             color="info"
           />
@@ -152,10 +158,6 @@ export default function Dashboard() {
         ) : (
           <MeetingList meetings={todayMeetings} />
         )}
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <N8NWorkflowStatus />
       </Paper>
     </Container>
   )

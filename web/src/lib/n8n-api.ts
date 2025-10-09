@@ -2,6 +2,26 @@ import axios from 'axios';
 
 const N8N_URL = process.env.N8N_URL || 'https://n8n.srv946785.hstgr.cloud';
 
+// N8N APIの型定義
+export interface N8NWorkflow {
+  id: string
+  name: string
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface N8NExecution {
+  id: string
+  workflowId: string
+  finished: boolean
+  mode: string
+  startedAt: string
+  stoppedAt?: string
+}
+
+export type WorkflowData = Record<string, unknown>
+
 // N8N APIクライアントを動的に作成
 function createN8NClient() {
   // 環境変数から改行を除去
@@ -44,7 +64,7 @@ export async function getWorkflow(id: string) {
 }
 
 // ワークフローを実行
-export async function executeWorkflow(id: string, data?: any) {
+export async function executeWorkflow(id: string, data?: WorkflowData) {
   try {
     const n8nClient = createN8NClient();
     const response = await n8nClient.post(`/api/v1/workflows/${id}/execute`, {
@@ -100,7 +120,7 @@ export async function toggleWorkflow(id: string, active: boolean) {
 }
 
 // Webhook経由でワークフローをトリガー
-export async function triggerWebhook(webhookPath: string, data: any) {
+export async function triggerWebhook(webhookPath: string, data: WorkflowData) {
   try {
     const response = await axios.post(
       `${N8N_URL}/webhook/${webhookPath}`,

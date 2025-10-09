@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import { createClient } from '@supabase/supabase-js'
+import { DatabaseMeeting, SyncResult } from '@/types/database'
 
 // Supabaseクライアント
 const supabase = createClient(
@@ -40,7 +41,7 @@ async function getServiceAccountAuth() {
 }
 
 // カレンダーイベントを取得して保存（サービスアカウント版）
-export async function syncCalendarEventsWithServiceAccount() {
+export async function syncCalendarEventsWithServiceAccount(): Promise<SyncResult> {
   try {
     // サービスアカウント認証
     const auth = await getServiceAccountAuth()
@@ -68,22 +69,25 @@ export async function syncCalendarEventsWithServiceAccount() {
     // Supabaseに保存
     const savedEvents = []
     for (const event of events) {
-      const eventData = {
-        event_id: event.id!,
-        summary: event.summary || 'タイトルなし',
+      const meetingData: DatabaseMeeting = {
+        google_event_id: event.id!,
+        title: event.summary || 'タイトルなし',
         description: event.description || '',
         start_time: event.start?.dateTime || event.start?.date,
         end_time: event.end?.dateTime || event.end?.date,
         location: event.location || '',
         meeting_url: event.hangoutLink || '',
+        organizer_email: event.organizer?.email || '',
+        is_enabled: true,
+        status: 'scheduled' as const,
         attendees: event.attendees || [],
-        raw_data: event,
-        synced_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
       const { data, error } = await supabase
-        .from('calendar_events')
-        .upsert(eventData, { onConflict: 'event_id' })
+        .from('meetings')
+        .upsert(meetingData, { onConflict: 'google_event_id' })
         .select()
 
       if (!error && data) {
@@ -97,18 +101,19 @@ export async function syncCalendarEventsWithServiceAccount() {
       savedCount: savedEvents.length,
       lastSync: new Date().toISOString()
     }
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Service account sync failed:', error)
     return {
       success: false,
-      error: error.message,
+      error: errorMessage,
       lastSync: new Date().toISOString()
     }
   }
 }
 
 // 既存の関数との互換性のため、エクスポート名を統一
-export async function syncCalendarEvents() {
+export async function syncCalendarEvents(): Promise<SyncResult> {
   // まずサービスアカウントを試す
   const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
 

@@ -27,30 +27,7 @@ import {
 } from '@mui/icons-material'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-
-interface Meeting {
-  id: string
-  google_event_id: string
-  title: string
-  description?: string
-  start_time: string
-  end_time: string
-  location?: string
-  meeting_url?: string
-  is_enabled: boolean
-  status: string
-  attendees?: Array<{
-    email: string
-    name?: string
-    company_id?: string
-    is_external: boolean
-  }>
-  proposals?: Array<{
-    id: string
-    status: string
-    presentation_url?: string
-  }>
-}
+import { Meeting } from '@/types/meeting'
 
 interface MeetingListProps {
   meetings: Meeting[]

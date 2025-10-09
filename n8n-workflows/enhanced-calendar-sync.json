@@ -1,0 +1,491 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "name": "1時間ごとに実行",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [256, 304],
+      "id": "schedule"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeMin",
+              "value": "={{new Date().toISOString()}}"
+            },
+            {
+              "name": "timeMax",
+              "value": "={{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()}}"
+            },
+            {
+              "name": "singleEvents",
+              "value": "true"
+            },
+            {
+              "name": "orderBy",
+              "value": "startTime"
+            },
+            {
+              "name": "maxResults",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer ya29.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Google Calendar API呼び出し",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [464, 304],
+      "id": "googleCalendarApi"
+    },
+    {
+      "parameters": {
+        "jsCode": "// イベントデータを整形 + 外部参加者判定\nconst items = $input.all();\nconst events = items[0].json.items || [];\n\nconst internalDomains = ['gmail.com', 'googlemail.com', 'yasuus-projects.vercel.app'];\n\nreturn events.map(event => {\n  const attendees = (event.attendees || []).map(a => ({\n    email: a.email,\n    name: a.displayName || a.email.split('@')[0],\n    response: a.responseStatus || 'needsAction',\n    is_organizer: a.organizer || false,\n    domain: a.email.split('@')[1]\n  }));\n  \n  // 外部参加者の抽出\n  const externalAttendees = attendees.filter(a => \n    !internalDomains.includes(a.domain)\n  );\n  \n  // 会議の期間計算\n  const start = new Date(event.start?.dateTime || event.start?.date);\n  const end = new Date(event.end?.dateTime || event.end?.date);\n  const durationMinutes = (end - start) / 1000 / 60;\n  \n  return {\n    json: {\n      event_id: event.id,\n      summary: event.summary || 'タイトルなし',\n      description: event.description || '',\n      start_time: event.start?.dateTime || event.start?.date,\n      end_time: event.end?.dateTime || event.end?.date,\n      location: event.location || '',\n      meeting_url: event.hangoutLink || '',\n      organizer_email: event.organizer?.email || '',\n      attendees: attendees,\n      external_attendees: externalAttendees,\n      has_external_attendees: externalAttendees.length > 0,\n      external_count: externalAttendees.length,\n      duration_minutes: durationMinutes,\n      is_important: durationMinutes >= 30 && externalAttendees.length > 0,\n      status: event.status || 'confirmed',\n      raw_data: event,\n      synced_at: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "name": "データ整形 + 外部参加者判定",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [656, 304],
+      "id": "formatData"
+    },
+    {
+      "parameters": {
+        "url": "https://dpqsipbppdemgfwuihjr.supabase.co/rest/v1/calendar_events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "={{$json}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Supabaseに保存",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [864, 304],
+      "id": "saveToSupabase"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.has_external_attendees}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "外部参加者チェック",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1056, 304],
+      "id": "checkExternal"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 企業ドメインを抽出してWeb検索用のクエリを準備\nconst externalAttendees = $json.external_attendees || [];\n\nconst companies = {};\n\n// ドメインごとに参加者をグループ化\nexternalAttendees.forEach(attendee => {\n  const domain = attendee.domain;\n  if (!companies[domain]) {\n    companies[domain] = {\n      domain: domain,\n      company_name: domain.replace(/\\.(com|co\\.jp|jp|net|org)$/, ''),\n      attendees: []\n    };\n  }\n  companies[domain].attendees.push(attendee);\n});\n\nconst companyList = Object.values(companies);\n\nreturn companyList.map(company => ({\n  json: {\n    event_id: $json.event_id,\n    meeting_title: $json.summary,\n    meeting_start: $json.start_time,\n    company_domain: company.domain,\n    company_name: company.company_name,\n    attendees_from_company: company.attendees,\n    search_query: `${company.company_name} 企業情報 事業内容 業界`,\n    timestamp: new Date().toISOString()\n  }\n}));"
+      },
+      "name": "企業ドメイン抽出",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1248, 240],
+      "id": "extractCompanies"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "{{$env.SERPER_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"{{$json.search_query}}\",\n  \"num\": 5\n}",
+        "options": {}
+      },
+      "name": "Web検索 (Serper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 240],
+      "id": "webSearch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$env.GEMINI_API_KEY}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"以下の企業情報を分析して、日本語で簡潔にまとめてください。\\n\\n企業名: {{$json.company_name}}\\nドメイン: {{$json.company_domain}}\\n\\nWeb検索結果:\\n{{JSON.stringify($json.search_results)}}\\n\\n以下の形式でまとめてください:\\n1. 企業概要（2-3文）\\n2. 主要事業（箇条書き）\\n3. 業界・規模\\n4. 特徴・強み\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"maxOutputTokens\": 1000\n  }\n}",
+        "options": {}
+      },
+      "name": "Gemini企業分析",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1632, 240],
+      "id": "geminiAnalysis"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$env.GEMINI_API_KEY}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"以下の企業に対して、AI・業務効率化ツールの提案を作成してください。\\n\\n【企業情報】\\n{{$node['Gemini企業分析'].json.candidates[0].content.parts[0].text}}\\n\\n【会議情報】\\n会議タイトル: {{$json.meeting_title}}\\n開始時刻: {{$json.meeting_start}}\\n参加者: {{JSON.stringify($json.attendees_from_company)}}\\n\\n【提案内容】\\n以下の4つの観点から提案を作成してください：\\n1. 業務効率化ツールの提案\\n2. ホームページ作成・改善提案\\n3. チャットボット導入提案\\n4. AI活用提案\\n\\n各提案は具体的な導入メリット、想定コスト、導入期間を含めてください。\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.8,\n    \"maxOutputTokens\": 2000\n  }\n}",
+        "options": {}
+      },
+      "name": "Gemini Pro 提案生成",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1824, 240],
+      "id": "geminiProposal"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 提案データを整形してSupabaseに保存する形式に変換\nconst companyAnalysis = $node['Gemini企業分析'].json.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst proposal = $json.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst searchResults = $node['Web検索 (Serper)'].json;\n\nreturn [{\n  json: {\n    event_id: $node['企業ドメイン抽出'].json.event_id,\n    company_domain: $node['企業ドメイン抽出'].json.company_domain,\n    company_name: $node['企業ドメイン抽出'].json.company_name,\n    company_analysis: companyAnalysis,\n    proposal_content: proposal,\n    search_results: searchResults,\n    status: 'generated',\n    generated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "提案データ整形",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2016, 240],
+      "id": "formatProposal"
+    },
+    {
+      "parameters": {
+        "url": "https://dpqsipbppdemgfwuihjr.supabase.co/rest/v1/proposals",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwcXNpcGJwcGRlbWdmd3VpaGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNzIzMzksImV4cCI6MjA3Mzk0ODMzOX0.Ke1gylvBOHU3XukM_IeQS3K9yM719qhgDbaqzDupy_Y"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "={{$json}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "提案をSupabaseに保存",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2208, 240],
+      "id": "saveProposal"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "message",
+              "value": "カレンダーイベント同期 + 企業分析 + AI提案生成完了"
+            }
+          ],
+          "number": [
+            {
+              "name": "synced_events",
+              "value": "={{$items('データ整形 + 外部参加者判定').length}}"
+            },
+            {
+              "name": "proposals_generated",
+              "value": "={{$items('提案をSupabaseに保存').length}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "実行結果",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [2400, 304],
+      "id": "result"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "message",
+              "value": "外部参加者なし - 保存のみ完了"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "外部参加者なし",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1248, 400],
+      "id": "noExternal"
+    }
+  ],
+  "connections": {
+    "1時間ごとに実行": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar API呼び出し",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar API呼び出し": {
+      "main": [
+        [
+          {
+            "node": "データ整形 + 外部参加者判定",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "データ整形 + 外部参加者判定": {
+      "main": [
+        [
+          {
+            "node": "Supabaseに保存",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabaseに保存": {
+      "main": [
+        [
+          {
+            "node": "外部参加者チェック",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "外部参加者チェック": {
+      "main": [
+        [
+          {
+            "node": "企業ドメイン抽出",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "外部参加者なし",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "企業ドメイン抽出": {
+      "main": [
+        [
+          {
+            "node": "Web検索 (Serper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web検索 (Serper)": {
+      "main": [
+        [
+          {
+            "node": "Gemini企業分析",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini企業分析": {
+      "main": [
+        [
+          {
+            "node": "Gemini Pro 提案生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Pro 提案生成": {
+      "main": [
+        [
+          {
+            "node": "提案データ整形",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提案データ整形": {
+      "main": [
+        [
+          {
+            "node": "提案をSupabaseに保存",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提案をSupabaseに保存": {
+      "main": [
+        [
+          {
+            "node": "実行結果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "外部参加者なし": {
+      "main": [
+        [
+          {
+            "node": "実行結果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "ffb041e424a1b8b6392c61a661a027b57a825a3d9caf4c66164cf8e467340185"
+  }
+}

@@ -6,245 +6,77 @@
         "rule": {
           "interval": [
             {
-              "field": "hours",
-              "hoursInterval": 6
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
             }
           ]
         }
       },
-      "id": "cron-trigger",
-      "name": "Every Day at 6AM",
+      "id": "schedule-trigger",
+      "name": "毎朝6時実行",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1,
-      "position": [250, 300]
+      "typeVersion": 1.2,
+      "position": [240, 300]
     },
     {
       "parameters": {
-        "authentication": "oAuth2",
-        "calendar": "primary",
-        "returnAll": false,
-        "limit": 50,
-        "options": {
-          "timeMin": "={{ $now.format('yyyy-MM-dd') }}T00:00:00Z",
-          "timeMax": "={{ $now.format('yyyy-MM-dd') }}T23:59:59Z",
-          "singleEvents": true,
-          "orderBy": "startTime"
-        }
+        "functionCode": "// Google Calendar API呼び出しの準備\nconst today = new Date();\nconst todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);\n\nreturn [{\n  json: {\n    timeMin: todayStart.toISOString(),\n    timeMax: todayEnd.toISOString(),\n    calendarId: 'primary',\n    singleEvents: true,\n    orderBy: 'startTime',\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "id": "google-calendar",
-      "name": "Get Today's Events",
-      "type": "n8n-nodes-base.googleCalendar",
+      "id": "prepare-calendar-params",
+      "name": "カレンダーパラメータ準備",
+      "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [450, 300],
-      "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "1",
-          "name": "Google Calendar Account"
-        }
-      }
+      "position": [440, 300]
     },
     {
       "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.status }}",
-              "operation": "notEqual",
-              "value2": "cancelled"
-            }
-          ]
-        }
-      },
-      "id": "filter-cancelled",
-      "name": "Filter Cancelled",
-      "type": "n8n-nodes-base.filter",
-      "typeVersion": 1,
-      "position": [650, 300]
-    },
-    {
-      "parameters": {
-        "functionCode": "const items = [];\n\nfor (const item of $input.all()) {\n  const event = item.json;\n  \n  // Extract attendees and determine if they're external\n  const attendees = (event.attendees || []).map(attendee => {\n    const isExternal = !attendee.email.endsWith('@yourcompany.com');\n    return {\n      email: attendee.email,\n      name: attendee.displayName || attendee.email.split('@')[0],\n      response_status: attendee.responseStatus,\n      is_organizer: attendee.organizer || false,\n      is_external: isExternal\n    };\n  });\n  \n  // Check if there are external attendees\n  const hasExternalAttendees = attendees.some(a => a.is_external);\n  \n  items.push({\n    json: {\n      google_event_id: event.id,\n      title: event.summary,\n      description: event.description || '',\n      start_time: event.start.dateTime || event.start.date,\n      end_time: event.end.dateTime || event.end.date,\n      location: event.location || '',\n      meeting_url: event.hangoutLink || '',\n      organizer_email: event.organizer.email,\n      status: event.status,\n      attendees: attendees,\n      has_external_attendees: hasExternalAttendees,\n      raw_event_data: event\n    }\n  });\n}\n\nreturn items;"
-      },
-      "id": "process-events",
-      "name": "Process Events",
-      "type": "n8n-nodes-base.functionItem",
-      "typeVersion": 1,
-      "position": [850, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://web:3000/api/meetings",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "bodyParameters": {
+        "method": "GET",
+        "url": "=https://www.googleapis.com/calendar/v3/calendars/{{ $json.calendarId }}/events",
+        "sendQuery": true,
+        "queryParameters": {
           "parameters": [
             {
-              "name": "google_event_id",
-              "value": "={{ $json.google_event_id }}"
+              "name": "timeMin",
+              "value": "={{ $json.timeMin }}"
             },
             {
-              "name": "title",
-              "value": "={{ $json.title }}"
+              "name": "timeMax",
+              "value": "={{ $json.timeMax }}"
             },
             {
-              "name": "description",
-              "value": "={{ $json.description }}"
+              "name": "singleEvents",
+              "value": "={{ $json.singleEvents }}"
             },
             {
-              "name": "start_time",
-              "value": "={{ $json.start_time }}"
-            },
-            {
-              "name": "end_time",
-              "value": "={{ $json.end_time }}"
-            },
-            {
-              "name": "location",
-              "value": "={{ $json.location }}"
-            },
-            {
-              "name": "meeting_url",
-              "value": "={{ $json.meeting_url }}"
-            },
-            {
-              "name": "organizer_email",
-              "value": "={{ $json.organizer_email }}"
-            },
-            {
-              "name": "attendees",
-              "value": "={{ $json.attendees }}"
+              "name": "orderBy",
+              "value": "={{ $json.orderBy }}"
             }
           ]
         },
-        "options": {
-          "batching": {
-            "batchSize": 10
-          }
-        }
-      },
-      "id": "save-to-db",
-      "name": "Save to Database",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 3,
-      "position": [1050, 300]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "value1": "={{ $json.has_external_attendees }}",
-              "value2": true
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GOOGLE_ACCESS_TOKEN }}"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "has-external",
-      "name": "Has External Attendees?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [1250, 300]
-    },
-    {
-      "parameters": {
-        "workflowId": "company-research-workflow"
-      },
-      "id": "trigger-research",
-      "name": "Trigger Company Research",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1,
-      "position": [1450, 250]
-    },
-    {
-      "parameters": {
-        "channel": "meeting-sync",
-        "message": "=## Meeting Sync Complete\\n\\nProcessed **{{ $items().length }}** meetings for {{ $now.format('yyyy-MM-dd') }}\\n\\nMeetings with external attendees: **{{ $items(\"has-external\").length }}**",
-        "attachments": [],
-        "otherOptions": {}
-      },
-      "id": "slack-notification",
-      "name": "Slack Notification",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 1,
-      "position": [1450, 400],
-      "credentials": {
-        "slackApi": {
-          "id": "2",
-          "name": "Slack API"
-        }
-      }
+      "id": "get-calendar-events",
+      "name": "Google Calendar取得",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
     }
   ],
   "connections": {
-    "cron-trigger": {
+    "schedule-trigger": {
       "main": [
         [
           {
-            "node": "google-calendar",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "google-calendar": {
-      "main": [
-        [
-          {
-            "node": "filter-cancelled",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "filter-cancelled": {
-      "main": [
-        [
-          {
-            "node": "process-events",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "process-events": {
-      "main": [
-        [
-          {
-            "node": "save-to-db",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "save-to-db": {
-      "main": [
-        [
-          {
-            "node": "has-external",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "has-external": {
-      "main": [
-        [
-          {
-            "node": "trigger-research",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "slack-notification",
+            "node": "prepare-calendar-params",
             "type": "main",
             "index": 0
           }
@@ -252,12 +84,8 @@
       ]
     }
   },
-  "active": true,
   "settings": {
-    "saveDataSuccessExecution": "all",
-    "saveExecutionProgress": true,
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "executionOrder": "v1"
   },
-  "id": 1
+  "active": true
 }

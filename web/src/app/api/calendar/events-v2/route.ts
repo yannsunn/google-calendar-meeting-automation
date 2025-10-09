@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+
+const DEFAULT_DAYS_RANGE = 7
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +13,7 @@ export async function GET(request: NextRequest) {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase configuration')
+      logger.error('Missing Supabase configuration', undefined, { context: 'events-v2' })
       return NextResponse.json([])
     }
 
@@ -20,7 +23,7 @@ export async function GET(request: NextRequest) {
     // パラメータの取得
     const searchParams = request.nextUrl.searchParams
     const startDate = searchParams.get('startDate')
-    const days = parseInt(searchParams.get('days') || '7')
+    const days = parseInt(searchParams.get('days') || String(DEFAULT_DAYS_RANGE))
 
     // 日付範囲の計算
     let query = supabase
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest) {
     const { data: events, error } = await query
 
     if (error) {
-      console.error('Error fetching calendar events:', error)
+      logger.error('Error fetching calendar events', error, { context: 'events-v2' })
       return NextResponse.json({
         error: true,
         message: error.message,
@@ -68,7 +71,10 @@ export async function GET(request: NextRequest) {
         .select('*')
         .limit(100)
 
-      console.log('No events found in date range, total events in DB:', allEvents?.length || 0)
+      logger.debug('No events found in date range', {
+        context: 'events-v2',
+        data: { totalEventsInDB: allEvents?.length || 0 }
+      })
     }
 
     // meetingsテーブルの形式に変換
@@ -90,15 +96,17 @@ export async function GET(request: NextRequest) {
       updated_at: event.updated_at || event.synced_at
     }))
 
-    console.log(`Returning ${meetings.length} events`)
+    logger.info(`Returning ${meetings.length} events`, { context: 'events-v2' })
     return NextResponse.json(meetings)
 
-  } catch (error: any) {
-    console.error('Unexpected error in calendar/events-v2:', error)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    logger.error('Unexpected error in calendar/events-v2', error, { context: 'events-v2' })
     return NextResponse.json({
       error: true,
-      message: error.message || 'Unknown error',
-      stack: error.stack
+      message: errorMessage,
+      stack: errorStack
     })
   }
 }

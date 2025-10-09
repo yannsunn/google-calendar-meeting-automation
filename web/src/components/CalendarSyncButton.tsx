@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button, CircularProgress, Alert, Snackbar } from '@mui/material'
+import { Button, CircularProgress, Alert, Snackbar, Box } from '@mui/material'
 import SyncIcon from '@mui/icons-material/Sync'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import axios from 'axios'
@@ -34,10 +34,11 @@ export default function CalendarSyncButton() {
       } else {
         throw new Error(response.data.error)
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       setMessage({
         type: 'error',
-        text: `❌ 同期エラー: ${error.message}`
+        text: `❌ 同期エラー: ${errorMessage}`
       })
     } finally {
       setSyncing(false)
@@ -46,7 +47,7 @@ export default function CalendarSyncButton() {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button
           variant="contained"
           color="primary"
@@ -58,11 +59,11 @@ export default function CalendarSyncButton() {
         </Button>
 
         {mounted && lastSync && (
-          <span style={{ fontSize: '14px', color: '#666' }}>
+          <Box component="span" sx={{ fontSize: '14px', color: 'text.secondary' }}>
             最終同期: {lastSync}
-          </span>
+          </Box>
         )}
-      </div>
+      </Box>
 
       <Snackbar
         open={!!message}
