@@ -61,17 +61,39 @@ export default function Dashboard() {
   const handleGenerateProposals = async () => {
     setProcessingWorkflow(true)
     try {
+      // 有効な会議のIDを取得
+      const enabledMeetings = todayMeetings.filter(m => m.is_enabled)
+      const meetingIds = enabledMeetings.map(m => m.id)
+
+      if (meetingIds.length === 0) {
+        alert('提案を生成する会議を選択してください')
+        return
+      }
+
+      // APIを呼び出し
       const response = await fetch('/api/workflows/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          workflow: 'generate-proposals',
-          meetings: todayMeetings.filter(m => m.is_enabled)
+          meetingIds,
+          workflowId: 'final-ai-agent-workflow'
         })
       })
-      if (!response.ok) throw new Error('Failed to trigger workflow')
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to trigger workflow')
+      }
+
+      // 成功メッセージ
+      alert(`提案資料の生成を開始しました。\n成功: ${result.triggered}件\n失敗: ${result.failed}件`)
+
+      // データを再取得
+      await refetch()
     } catch (err) {
       console.error('Error triggering workflow:', err)
+      alert(`エラーが発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`)
     } finally {
       setProcessingWorkflow(false)
     }

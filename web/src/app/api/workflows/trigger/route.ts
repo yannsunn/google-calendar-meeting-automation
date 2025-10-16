@@ -1,68 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import * as n8nApi from '@/lib/n8n-api'
 
-const N8N_URL = process.env.N8N_URL || 'https://n8n.srv946785.hstgr.cloud'
-const N8N_WEBHOOK_BASE_URL = process.env.N8N_WEBHOOK_BASE_URL || 'https://n8n.srv946785.hstgr.cloud/webhook'
-
+/**
+ * POST /api/workflows/trigger
+ * N8Nワークフローを手動でトリガーして提案資料を生成
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { workflow, meetings } = body
-
-    // Trigger N8N webhook with meeting data
-    const webhookUrl = `${N8N_WEBHOOK_BASE_URL}/${workflow}`
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        meetings,
-        triggered_at: new Date().toISOString(),
-        trigger_source: 'web_app'
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`N8N webhook failed: ${response.statusText}`)
+    // 認証チェック
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    const result = await response.json()
+    // リクエストボディの取得
+    const body = await request.json()
+    const { meetingIds, workflowId } = body
 
-    // Log workflow execution
-    await logWorkflowExecution(workflow, 'triggered', { meetings: meetings.length })
+    // バリデーション
+    if (!meetingIds || !Array.isArray(meetingIds) || meetingIds.length === 0) {
+      return NextResponse.json(
+        { error: 'Meeting IDs are required' },
+        { status: 400 }
+      )
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Workflow triggered successfully',
-      workflow,
-      execution_id: result.execution_id
+    console.log('Triggering workflow for meetings', {
+      meetingIds,
+      workflowId,
+      user: session.user?.email,
+    })
+
+    // デフォルトワークフローIDを設定
+    const targetWorkflowId = workflowId || 'final-ai-agent-workflow'
+
+    // N8Nワークフローをトリガー
+    const results = []
+    const errors = []
+
+    for (const meetingId of meetingIds) {
+      try {
+        console.log(`Triggering workflow for meeting ${meetingId}`)
+
+        // ワークフローを実行
+        const execution = await n8nApi.executeWorkflow(targetWorkflowId, {
+          meetingId,
+          trigger: 'manual',
+          triggeredBy: session.user?.email,
+          timestamp: new Date().toISOString(),
+        })
+
+        results.push({
+          meetingId,
+          executionId: execution.id,
+          status: 'triggered',
+        })
+
+        console.log(`Workflow triggered successfully for meeting ${meetingId}`, execution.id)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error(`Failed to trigger workflow for meeting ${meetingId}`, errorMessage)
+
+        errors.push({
+          meetingId,
+          error: errorMessage,
+        })
+      }
+    }
+
+    // 実行結果を返す
+    const response = {
+      success: errors.length === 0,
+      triggered: results.length,
+      failed: errors.length,
+      results,
+      errors: errors.length > 0 ? errors : undefined,
+    }
+
+    console.log('Workflow trigger completed', response)
+
+    return NextResponse.json(response, {
+      status: errors.length > 0 ? 207 : 200, // 207 Multi-Status
     })
   } catch (error) {
-    console.error('Error triggering workflow:', error)
+    console.error('Workflow trigger error', error)
+
     return NextResponse.json(
-      { error: 'Failed to trigger workflow' },
+      {
+        error: 'Failed to trigger workflow',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
 }
 
-async function logWorkflowExecution(workflow: string, status: string, metadata: any) {
-  // Log to database
-  const { Pool } = await import('pg')
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  })
-
+/**
+ * GET /api/workflows/trigger
+ * 利用可能なワークフローの一覧を取得
+ */
+export async function GET(request: NextRequest) {
   try {
-    await pool.query(
-      `INSERT INTO workflow_executions (workflow_name, trigger_type, status, input_data)
-       VALUES ($1, $2, $3, $4)`,
-      [workflow, 'manual', status, JSON.stringify(metadata)]
+    // 認証チェック
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // N8Nからワークフロー一覧を取得
+    const workflows = await n8nApi.getWorkflows()
+
+    // 提案生成用のワークフローのみフィルタ
+    const proposalWorkflows = workflows.filter((wf: any) =>
+      wf.name.toLowerCase().includes('proposal') ||
+      wf.name.toLowerCase().includes('ai') ||
+      wf.name.toLowerCase().includes('agent')
     )
+
+    return NextResponse.json({
+      workflows: proposalWorkflows.map((wf: any) => ({
+        id: wf.id,
+        name: wf.name,
+        active: wf.active,
+      })),
+    })
   } catch (error) {
-    console.error('Failed to log workflow execution:', error)
-  } finally {
-    await pool.end()
+    console.error('Failed to fetch workflows', error)
+
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch workflows',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
 }
