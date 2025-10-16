@@ -45,7 +45,13 @@
       "Read(//mnt/c/Users/march/**)",
       "Bash(start https://supabase.com/dashboard/project/dpqsipbppdemgfwuihjr/sql/new)",
       "Bash(export:*)",
-      "Bash(source .env.local)"
+      "Bash(source .env.local)",
+      "Bash(git log:*)",
+      "Bash(openssl rand:*)",
+      "Bash(start https://console.cloud.google.com/apis/credentials?project=863342165958)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

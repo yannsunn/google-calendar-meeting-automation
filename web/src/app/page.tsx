@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import {
   Container,
   Typography,
@@ -13,7 +14,10 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Avatar,
+  Menu,
+  MenuItem
 } from '@mui/material'
 import {
   CalendarMonth,
@@ -21,7 +25,9 @@ import {
   AutoAwesome,
   Refresh,
   CheckCircle,
-  Schedule
+  Schedule,
+  Logout,
+  AccountCircle
 } from '@mui/icons-material'
 import MeetingList from '@/components/MeetingList'
 import StatsCard from '@/components/StatsCard'
@@ -29,9 +35,11 @@ import CalendarSyncButton from '@/components/CalendarSyncButton'
 import { useMeetings } from '@/hooks/useMeetings'
 
 export default function Dashboard() {
+  const { data: session } = useSession()
   const { meetings, isLoading, error, refetch } = useMeetings()
   const [processingWorkflow, setProcessingWorkflow] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<string>('')
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
   useEffect(() => {
     setLastSyncTime(new Date().toLocaleTimeString('ja-JP'))
@@ -69,19 +77,66 @@ export default function Dashboard() {
     }
   }
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+  }
+
+  const handleLogout = () => {
+    handleMenuClose()
+    signOut({ callbackUrl: '/auth/signin' })
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom>
-          打ち合わせ準備自動化システム
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <CalendarSyncButton />
-          {lastSyncTime && (
-            <Typography variant="body2" color="text.secondary">
-              Last sync: {lastSyncTime}
-            </Typography>
-          )}
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h3" component="h1" gutterBottom>
+            打ち合わせ準備自動化システム
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <CalendarSyncButton />
+            {lastSyncTime && (
+              <Typography variant="body2" color="text.secondary">
+                Last sync: {lastSyncTime}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {/* ユーザーメニュー */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {session?.user?.email}
+          </Typography>
+          <IconButton onClick={handleMenuOpen} size="small">
+            {session?.user?.image ? (
+              <Avatar src={session.user.image} alt={session.user.name || ''} sx={{ width: 32, height: 32 }} />
+            ) : (
+              <AccountCircle />
+            )}
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleLogout}>
+              <Logout fontSize="small" sx={{ mr: 1 }} />
+              ログアウト
+            </MenuItem>
+          </Menu>
         </Box>
       </Box>
 
