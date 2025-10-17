@@ -56,7 +56,8 @@
       "Bash(start https://n8n.srv946785.hstgr.cloud/workflows)",
       "Bash(tee:*)",
       "Read(//c/tmp/**)",
-      "Bash(paste:*)"
+      "Bash(paste:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Include *.json,*.md | ForEach-Object { (Get-Content $_FullName) -replace ''ya29\\.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206'', ''<YOUR_GOOGLE_ACCESS_TOKEN>'' | Set-Content $_FullName }\")"
     ],
     "deny": [],
     "ask": []

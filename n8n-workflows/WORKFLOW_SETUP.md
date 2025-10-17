@@ -41,8 +41,10 @@ N8N Settings → Variables に以下を追加してください：
 
 ### 既存の環境変数（確認のみ）
 ```bash
-GOOGLE_ACCESS_TOKEN=ya29.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206
+GOOGLE_ACCESS_TOKEN=<your-google-oauth-access-token>
 ```
+
+> **注意**: 実際のアクセストークンはN8N Settings → Variablesで設定してください。
 
 ### 新規追加が必要な環境変数
 
