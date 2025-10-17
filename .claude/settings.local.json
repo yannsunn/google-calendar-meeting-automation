@@ -51,7 +51,12 @@
       "Bash(start https://console.cloud.google.com/apis/credentials?project=863342165958)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(start https://supabase.com/dashboard/project/dpqsipbppdemgfwuihjr/editor)",
+      "Bash(start https://n8n.srv946785.hstgr.cloud/workflows)",
+      "Bash(tee:*)",
+      "Read(//c/tmp/**)",
+      "Bash(paste:*)"
     ],
     "deny": [],
     "ask": []

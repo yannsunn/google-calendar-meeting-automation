@@ -36,19 +36,19 @@ export async function POST(request: NextRequest) {
       user: session.user?.email,
     })
 
-    // デフォルトワークフローIDを設定
-    const targetWorkflowId = workflowId || 'final-ai-agent-workflow'
+    // Webhookパス（N8Nワークフロー内で定義されたWebhook）
+    const webhookPath = 'trigger-proposal'
 
-    // N8Nワークフローをトリガー
+    // N8NワークフローをWebhook経由でトリガー
     const results = []
     const errors = []
 
     for (const meetingId of meetingIds) {
       try {
-        console.log(`Triggering workflow for meeting ${meetingId}`)
+        console.log(`Triggering workflow via webhook for meeting ${meetingId}`)
 
-        // ワークフローを実行
-        const execution = await n8nApi.executeWorkflow(targetWorkflowId, {
+        // Webhookをトリガー
+        const result = await n8nApi.triggerWebhook(webhookPath, {
           meetingId,
           trigger: 'manual',
           triggeredBy: session.user?.email,
@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
 
         results.push({
           meetingId,
-          executionId: execution.id,
           status: 'triggered',
+          result,
         })
 
-        console.log(`Workflow triggered successfully for meeting ${meetingId}`, execution.id)
+        console.log(`Workflow triggered successfully for meeting ${meetingId}`, result)
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         console.error(`Failed to trigger workflow for meeting ${meetingId}`, errorMessage)
