@@ -73,7 +73,8 @@
         },
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify($json) }}"
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
       },
       "name": "Supabase: Upsert Event",
       "type": "n8n-nodes-base.httpRequest",
@@ -95,6 +96,32 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "message",
+              "value": "Calendar sync completed"
+            }
+          ],
+          "number": [
+            {
+              "name": "events_synced",
+              "value": "={{ $items('Format & Detect External').length }}"
+            }
+          ]
+        }
+      },
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1250, 300]
     }
   ],
   "connections": {
@@ -109,6 +136,9 @@
     },
     "Supabase: Upsert Event": {
       "main": [[{"node": "Has External Attendees?", "type": "main", "index": 0}]]
+    },
+    "Has External Attendees?": {
+      "main": [[{"node": "Summary", "type": "main", "index": 0}]]
     }
   }
 }
