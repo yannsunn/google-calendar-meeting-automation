@@ -21,17 +21,63 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }) {
       // 初回サインイン時にアカウント情報を保存
       if (account) {
-        token.accessToken = account.access_token
-        token.refreshToken = account.refresh_token
-        token.expiresAt = account.expires_at
+        return {
+          ...token,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          expiresAt: account.expires_at,
+        }
       }
-      return token
+
+      // トークンが有効期限内の場合はそのまま返す
+      if (token.expiresAt && Date.now() < (token.expiresAt as number) * 1000) {
+        return token
+      }
+
+      // トークンをリフレッシュ
+      try {
+        console.log('Refreshing access token...')
+
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.GOOGLE_CLIENT_ID!,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+            grant_type: 'refresh_token',
+            refresh_token: token.refreshToken as string,
+          }),
+        })
+
+        const refreshedTokens = await response.json()
+
+        if (!response.ok) {
+          console.error('Failed to refresh token:', refreshedTokens)
+          throw refreshedTokens
+        }
+
+        console.log('Token refreshed successfully')
+
+        return {
+          ...token,
+          accessToken: refreshedTokens.access_token,
+          expiresAt: Math.floor(Date.now() / 1000) + refreshedTokens.expires_in,
+          refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+        }
+      } catch (error) {
+        console.error('Error refreshing access token:', error)
+        return {
+          ...token,
+          error: 'RefreshAccessTokenError',
+        }
+      }
     },
 
     async session({ session, token }) {
       // セッションにトークン情報を追加
       session.accessToken = token.accessToken as string
       session.refreshToken = token.refreshToken as string
+      session.error = token.error as string | undefined
       return session
     },
 

@@ -49,8 +49,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result.rows)
   } catch (error: any) {
     console.error('Error fetching meetings:', error)
-    // データベース接続エラーでもフロントエンドが動作するように空配列を返す
-    return NextResponse.json([])
+
+    // データベース接続エラーの場合は明示的に伝える
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return NextResponse.json(
+        { error: 'Database connection failed', meetings: [] },
+        { status: 503 }
+      )
+    }
+
+    // その他のエラー
+    return NextResponse.json(
+      { error: 'Failed to fetch meetings', details: error.message, meetings: [] },
+      { status: 500 }
+    )
   }
 }
 
@@ -112,10 +124,10 @@ export async function POST(request: NextRequest) {
     } finally {
       client.release()
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating meeting:', error)
     return NextResponse.json(
-      { error: 'Failed to create meeting' },
+      { error: 'Failed to create meeting', details: error.message },
       { status: 500 }
     )
   }
