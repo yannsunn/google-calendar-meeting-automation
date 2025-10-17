@@ -57,7 +57,12 @@
       "Bash(tee:*)",
       "Read(//c/tmp/**)",
       "Bash(paste:*)",
-      "Bash(powershell -Command \"Get-ChildItem -Recurse -Include *.json,*.md | ForEach-Object { (Get-Content $_FullName) -replace ''ya29\\.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206'', ''<YOUR_GOOGLE_ACCESS_TOKEN>'' | Set-Content $_FullName }\")"
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Include *.json,*.md | ForEach-Object { (Get-Content $_FullName) -replace ''ya29\\.a0AQQ_BDT-rHVy8h6vbiTB8Rir1n2Dt5oZhejJaiv-zT7SKjnj5snozrsDudWlqud-LAIn4FBPVP-uVF8lETAPfDJP6M-dKgdYdfshtZhTog3CPA-KB889n3PtFCCCn8bPNhDCu6SICwGEs0oaE_gD_BXDMII3P-B_zKoF3TB_cjYZgK65ObMDCTafKxfQ7YYSCxauiY4aCgYKAbcSAQ4SFQHGX2MiJ8ZiKcP1yVJJv-xQ2Toakg0206'', ''<YOUR_GOOGLE_ACCESS_TOKEN>'' | Set-Content $_FullName }\")",
+      "Bash(git rebase:*)",
+      "Bash(awk:*)",
+      "Bash(start \"\" \"C:\\Users\\march\\Googleカレンダータスク通知\\n8n-workflows\")",
+      "Bash(start https://n8n.srv946785.hstgr.cloud)",
+      "Bash(start \"\" \"C:\\Users\\march\\Googleカレンダータスク通知\\n8n-workflows\\complete-automated-workflow.json\")"
     ],
     "deny": [],
     "ask": []
