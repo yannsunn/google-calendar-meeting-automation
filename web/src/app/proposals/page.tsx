@@ -63,6 +63,15 @@ export default function ProposalsPage() {
         console.error('Failed to load hidden events:', e);
       }
     }
+    // localStorageから企業URLを読み込む
+    const storedUrls = localStorage.getItem('companyUrls');
+    if (storedUrls) {
+      try {
+        setCompanyUrls(JSON.parse(storedUrls));
+      } catch (e) {
+        console.error('Failed to load company URLs:', e);
+      }
+    }
   }, []);
 
   const fetchEvents = async () => {
@@ -104,6 +113,8 @@ export default function ProposalsPage() {
   };
 
   const handleSaveUrls = () => {
+    // localStorageに保存
+    localStorage.setItem('companyUrls', JSON.stringify(companyUrls));
     setDialogOpen(false);
   };
 
@@ -163,7 +174,7 @@ export default function ProposalsPage() {
 
       setSuccess(`${selectedEvents.size}件の提案資料を生成しました。3時間前にメール通知が届きます。`);
       setSelectedEvents(new Set());
-      setCompanyUrls({});
+      // 企業URLは保持する（削除しない）
 
       // イベントリストを再読み込み
       setTimeout(fetchEvents, 1000);
