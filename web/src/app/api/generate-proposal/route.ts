@@ -23,7 +23,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const data = await response.json()
+    // N8Nが空のレスポンスを返す場合があるため、テキストとして取得
+    const responseText = await response.text()
+    console.log('N8N response:', responseText)
+
+    // レスポンスが空でない場合はJSONとしてパース
+    let data = { success: true, message: 'Proposal generation started' }
+    if (responseText && responseText.trim()) {
+      try {
+        data = JSON.parse(responseText)
+      } catch (e) {
+        console.log('Response is not JSON, using default success message')
+      }
+    }
+
     return NextResponse.json(data)
   } catch (error: any) {
     console.error('Error calling N8N webhook:', error)
