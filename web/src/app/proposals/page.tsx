@@ -75,7 +75,7 @@ export default function ProposalsPage() {
       const filteredEvents = (data.meetings || []).filter((e: CalendarEvent) => {
         return !e.duration_minutes || e.duration_minutes > 15;
       });
-      console.log('Loaded events:', filteredEvents.map(e => ({ id: e.event_id, summary: e.summary })));
+      console.log('Loaded events:', filteredEvents.map((e: CalendarEvent) => ({ id: e.event_id, summary: e.summary })));
       setEvents(filteredEvents);
     } catch (err: any) {
       setError(err.message);
