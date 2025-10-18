@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { BusinessCenter, CalendarToday, AccessTime, Send } from '@mui/icons-material';
+import { BusinessCenter, CalendarToday, AccessTime, Send, VisibilityOff, Visibility } from '@mui/icons-material';
 
 interface CalendarEvent {
   event_id: string;
@@ -49,9 +49,20 @@ export default function ProposalsPage() {
   const [success, setSuccess] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentEventId, setCurrentEventId] = useState('');
+  const [hiddenEvents, setHiddenEvents] = useState<Set<string>>(new Set());
+  const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => {
     fetchEvents();
+    // localStorageから非表示リストを読み込む
+    const stored = localStorage.getItem('hiddenEvents');
+    if (stored) {
+      try {
+        setHiddenEvents(new Set(JSON.parse(stored)));
+      } catch (e) {
+        console.error('Failed to load hidden events:', e);
+      }
+    }
   }, []);
 
   const fetchEvents = async () => {
@@ -94,6 +105,22 @@ export default function ProposalsPage() {
 
   const handleSaveUrls = () => {
     setDialogOpen(false);
+  };
+
+  const handleHideEvent = (eventId: string) => {
+    const newHidden = new Set(hiddenEvents);
+    newHidden.add(eventId);
+    setHiddenEvents(newHidden);
+    // localStorageに保存
+    localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(newHidden)));
+  };
+
+  const handleUnhideEvent = (eventId: string) => {
+    const newHidden = new Set(hiddenEvents);
+    newHidden.delete(eventId);
+    setHiddenEvents(newHidden);
+    // localStorageに保存
+    localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(newHidden)));
   };
 
   const handleGenerateProposals = async () => {
@@ -172,6 +199,18 @@ export default function ProposalsPage() {
         <Typography variant="body2" color="text.secondary">
           必要に応じて、企業のURLを追加することでより詳細な提案が可能です。
         </Typography>
+
+        {/* 非表示リスト表示トグル */}
+        <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Button
+            variant={showHidden ? "contained" : "outlined"}
+            size="small"
+            startIcon={showHidden ? <Visibility /> : <VisibilityOff />}
+            onClick={() => setShowHidden(!showHidden)}
+          >
+            {showHidden ? '非表示リストを隠す' : `非表示リスト (${hiddenEvents.size}件)`}
+          </Button>
+        </Box>
       </Box>
 
       {events.length === 0 ? (
@@ -181,7 +220,11 @@ export default function ProposalsPage() {
       ) : (
         <>
           <Grid container spacing={2}>
-            {events.map((event) => (
+            {events
+              .filter(event => showHidden ? hiddenEvents.has(event.event_id) : !hiddenEvents.has(event.event_id))
+              .map((event) => {
+                const isHidden = hiddenEvents.has(event.event_id);
+                return (
               <Grid item xs={12} key={event.event_id}>
                 <Card
                   sx={{
@@ -288,19 +331,43 @@ export default function ProposalsPage() {
                           return null;
                         })()}
 
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => handleOpenUrlDialog(event.event_id)}
-                        >
-                          企業URLを追加 ({companyUrls[event.event_id]?.split('\n').filter(u => u.trim()).length || 0}件)
-                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleOpenUrlDialog(event.event_id)}
+                          >
+                            企業URLを追加 ({companyUrls[event.event_id]?.split('\n').filter(u => u.trim()).length || 0}件)
+                          </Button>
+                          {isHidden ? (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              color="success"
+                              startIcon={<Visibility />}
+                              onClick={() => handleUnhideEvent(event.event_id)}
+                            >
+                              表示
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              color="warning"
+                              startIcon={<VisibilityOff />}
+                              onClick={() => handleHideEvent(event.event_id)}
+                            >
+                              非表示
+                            </Button>
+                          )}
+                        </Box>
                       </Box>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+            );
+              })}
           </Grid>
 
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
