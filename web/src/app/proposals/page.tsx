@@ -25,11 +25,17 @@ import { BusinessCenter, CalendarToday, AccessTime, Send } from '@mui/icons-mate
 interface CalendarEvent {
   event_id: string;
   summary: string;
+  description?: string;
   company_name: string;
   start_time: string;
   end_time: string;
+  location?: string;
+  meeting_url?: string;
+  organizer_email?: string;
+  attendees?: string;
   has_external_attendees: boolean;
   external_count: number;
+  duration_minutes?: number;
   proposal_status?: string;
 }
 
@@ -54,8 +60,11 @@ export default function ProposalsPage() {
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
 
-      // 全ての会議を表示
-      setEvents(data.meetings || []);
+      // 15分より長い会議のみ表示
+      const filteredEvents = (data.meetings || []).filter((e: CalendarEvent) => {
+        return !e.duration_minutes || e.duration_minutes > 15;
+      });
+      setEvents(filteredEvents);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -192,11 +201,11 @@ export default function ProposalsPage() {
                         label=""
                       />
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" gutterBottom>
+                        <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                           {event.summary}
                         </Typography>
 
-                        <Box sx={{ display: 'flex', gap: 2, mb: 1, flexWrap: 'wrap' }}>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                           <Chip
                             icon={<BusinessCenter />}
                             label={event.company_name || '企業名なし'}
@@ -211,13 +220,73 @@ export default function ProposalsPage() {
                           />
                           <Chip
                             icon={<AccessTime />}
-                            label={new Date(event.start_time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                            label={`${new Date(event.start_time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - ${new Date(event.end_time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} (${event.duration_minutes || 0}分)`}
                             size="small"
                           />
                           {event.proposal_status === 'generated' && (
                             <Chip label="提案済み" size="small" color="success" />
                           )}
                         </Box>
+
+                        {/* 説明文 */}
+                        {event.description && (
+                          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                              詳細:
+                            </Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                              {event.description}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* 会議URL */}
+                        {event.meeting_url && (
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>会議室:</strong>{' '}
+                              <a href={event.meeting_url} target="_blank" rel="noopener noreferrer">
+                                {event.meeting_url}
+                              </a>
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* 場所 */}
+                        {event.location && (
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              <strong>場所:</strong> {event.location}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* ゲスト情報 */}
+                        {event.attendees && (() => {
+                          try {
+                            const attendeesList = JSON.parse(event.attendees);
+                            if (Array.isArray(attendeesList) && attendeesList.length > 0) {
+                              return (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    <strong>ゲスト ({attendeesList.length}名):</strong>
+                                  </Typography>
+                                  <Box sx={{ pl: 2 }}>
+                                    {attendeesList.map((attendee: any, idx: number) => (
+                                      <Typography key={idx} variant="body2" color="text.secondary">
+                                        • {attendee.name || attendee.email} ({attendee.email})
+                                        {attendee.response && ` - ${attendee.response}`}
+                                      </Typography>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              );
+                            }
+                          } catch (e) {
+                            return null;
+                          }
+                          return null;
+                        })()}
 
                         <Button
                           variant="outlined"
