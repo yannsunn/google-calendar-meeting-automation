@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(query, [start.toISOString(), end.toISOString()])
 
-    return NextResponse.json(result.rows)
+    return NextResponse.json({ meetings: result.rows })
   } catch (error: any) {
     console.error('Error fetching meetings:', error)
 
