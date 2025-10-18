@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { BusinessCenter, CalendarToday, AccessTime, Send, VisibilityOff, Visibility } from '@mui/icons-material';
+import { BusinessCenter, CalendarToday, AccessTime, Send, VisibilityOff, Visibility, Preview } from '@mui/icons-material';
 
 interface CalendarEvent {
   id: string;
@@ -51,6 +51,9 @@ export default function ProposalsPage() {
   const [currentEventId, setCurrentEventId] = useState('');
   const [hiddenEvents, setHiddenEvents] = useState<Set<string>>(new Set());
   const [showHidden, setShowHidden] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<any>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -132,6 +135,58 @@ export default function ProposalsPage() {
     setHiddenEvents(newHidden);
     // localStorageに保存
     localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(newHidden)));
+  };
+
+  const handlePreviewProposal = async () => {
+    if (selectedEvents.size === 0) {
+      setError('会議を選択してください');
+      return;
+    }
+
+    if (selectedEvents.size > 1) {
+      setError('プレビューは1件ずつ確認してください');
+      return;
+    }
+
+    setPreviewing(true);
+    setError('');
+
+    try {
+      const eventId = Array.from(selectedEvents)[0];
+      const event = events.find(e => e.id === eventId);
+      if (!event) return;
+
+      const urls = companyUrls[eventId]
+        ? companyUrls[eventId].split('\n').filter(u => u.trim())
+        : [];
+
+      const response = await fetch('/api/generate-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: eventId,
+          company_name: event.company_name,
+          company_urls: urls,
+          summary: event.title,
+          start_time: event.start_time,
+          user_email: 'yannsunn1116@gmail.com',
+          preview_mode: true
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.details || 'Failed to generate preview');
+      }
+
+      setPreviewContent(result);
+      setPreviewDialogOpen(true);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPreviewing(false);
+    }
   };
 
   const handleGenerateProposals = async () => {
@@ -381,7 +436,17 @@ export default function ProposalsPage() {
               })}
           </Grid>
 
-          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="large"
+              color="primary"
+              startIcon={previewing ? <CircularProgress size={20} /> : <Preview />}
+              onClick={handlePreviewProposal}
+              disabled={selectedEvents.size === 0 || selectedEvents.size > 1 || previewing}
+            >
+              {previewing ? 'プレビュー生成中...' : 'プレビュー生成（1件のみ）'}
+            </Button>
             <Button
               variant="contained"
               size="large"
@@ -416,6 +481,30 @@ export default function ProposalsPage() {
         <DialogActions>
           <Button onClick={handleCloseUrlDialog}>キャンセル</Button>
           <Button onClick={handleSaveUrls} variant="contained">保存</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* プレビューダイアログ */}
+      <Dialog open={previewDialogOpen} onClose={() => setPreviewDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>提案資料プレビュー</DialogTitle>
+        <DialogContent>
+          {previewContent ? (
+            <Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                生成された提案資料の内容:
+              </Typography>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, maxHeight: '60vh', overflow: 'auto' }}>
+                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontFamily: 'inherit' }}>
+                  {JSON.stringify(previewContent, null, 2)}
+                </pre>
+              </Box>
+            </Box>
+          ) : (
+            <Typography>プレビューデータがありません</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewDialogOpen(false)}>閉じる</Button>
         </DialogActions>
       </Dialog>
     </Container>
