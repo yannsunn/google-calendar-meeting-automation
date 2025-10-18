@@ -154,7 +154,7 @@ export default function ProposalsPage() {
           ? companyUrls[eventId].split('\n').filter(u => u.trim())
           : [];
 
-        const response = await fetch('https://n8n.srv946785.hstgr.cloud/webhook/generate-proposal', {
+        const response = await fetch('/api/generate-proposal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
