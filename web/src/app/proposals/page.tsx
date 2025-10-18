@@ -75,6 +75,7 @@ export default function ProposalsPage() {
       const filteredEvents = (data.meetings || []).filter((e: CalendarEvent) => {
         return !e.duration_minutes || e.duration_minutes > 15;
       });
+      console.log('Loaded events:', filteredEvents.map(e => ({ id: e.event_id, summary: e.summary })));
       setEvents(filteredEvents);
     } catch (err: any) {
       setError(err.message);
@@ -108,11 +109,13 @@ export default function ProposalsPage() {
   };
 
   const handleHideEvent = (eventId: string) => {
+    console.log('Hiding event:', eventId);
     const newHidden = new Set(hiddenEvents);
     newHidden.add(eventId);
     setHiddenEvents(newHidden);
     // localStorageに保存
     localStorage.setItem('hiddenEvents', JSON.stringify(Array.from(newHidden)));
+    console.log('Hidden events:', Array.from(newHidden));
   };
 
   const handleUnhideEvent = (eventId: string) => {
