@@ -47,6 +47,8 @@ export async function middleware(request: NextRequest) {
         { status: 429, headers: { 'Retry-After': '60' } }
       )
     }
+    // APIエンドポイントは認証不要（認証が必要な場合はエンドポイント内で確認）
+    return NextResponse.next()
   }
 
   // 認証ページはスキップ
