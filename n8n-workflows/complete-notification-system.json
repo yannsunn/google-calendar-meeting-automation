@@ -39,7 +39,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const internalDomains = 'gmail.com,googlemail.com'.split(',');\nconst items = $input.all();\n\nreturn items.map(item => {\n  const event = item.json;\n  const attendees = (event.attendees || []).map(a => ({\n    email: a.email,\n    name: a.displayName || a.email.split('@')[0],\n    response: a.responseStatus || 'needsAction',\n    is_organizer: a.organizer || false,\n    domain: a.email.split('@')[1]\n  }));\n  \n  const externalAttendees = attendees.filter(a => \n    !internalDomains.includes(a.domain.toLowerCase())\n  );\n  \n  // 企業名を会議タイトルから抽出（例: \"株式会社ABC 打ち合わせ\" → \"株式会社ABC\"）\n  let companyName = '';\n  const titleMatch = event.summary?.match(/([株式会社|有限会社|合同会社]?[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FFFa-zA-Z0-9]+)/);\n  if (titleMatch) {\n    companyName = titleMatch[1];\n  } else if (externalAttendees.length > 0) {\n    // メールドメインから企業名を推測\n    companyName = externalAttendees[0].domain.split('.')[0];\n  }\n  \n  const start = new Date(event.start?.dateTime || event.start?.date);\n  const end = new Date(event.end?.dateTime || event.end?.date);\n  const durationMinutes = (end - start) / 1000 / 60;\n  \n  return {\n    json: {\n      event_id: event.id,\n      summary: event.summary || 'No Title',\n      description: event.description || '',\n      start_time: event.start?.dateTime || event.start?.date,\n      end_time: event.end?.dateTime || event.end?.date,\n      location: event.location || '',\n      meeting_url: event.hangoutLink || '',\n      organizer_email: event.organizer?.email || '',\n      company_name: companyName,\n      attendees: JSON.stringify(attendees),\n      external_attendees: JSON.stringify(externalAttendees),\n      has_external_attendees: externalAttendees.length > 0,\n      external_count: externalAttendees.length,\n      duration_minutes: durationMinutes,\n      is_important: durationMinutes >= 30 && externalAttendees.length > 0,\n      status: event.status || 'confirmed',\n      proposal_status: 'pending',\n      company_urls: '',\n      synced_at: new Date().toISOString()\n    }\n  };\n});"
+        "jsCode": "const internalDomains = 'gmail.com,googlemail.com'.split(',');\nconst items = $input.all();\n\nreturn items.map(item => {\n  const event = item.json;\n  \n  // event_idを確実に取得\n  const eventId = event.id || event.event_id || '';\n  if (!eventId) {\n    console.error('Warning: Event without ID', event);\n    return null;\n  }\n  \n  const attendees = (event.attendees || []).map(a => ({\n    email: a.email,\n    name: a.displayName || a.email.split('@')[0],\n    response: a.responseStatus || 'needsAction',\n    is_organizer: a.organizer || false,\n    domain: a.email.split('@')[1]\n  }));\n  \n  const externalAttendees = attendees.filter(a => \n    !internalDomains.includes(a.domain.toLowerCase())\n  );\n  \n  // 企業名を会議タイトルから抽出\n  let companyName = '';\n  if (event.summary) {\n    const titleMatch = event.summary.match(/([株式会社|有限会社|合同会社]?[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FFFa-zA-Z0-9]+)/);\n    if (titleMatch) {\n      companyName = titleMatch[1];\n    }\n  }\n  \n  if (!companyName && externalAttendees.length > 0) {\n    companyName = externalAttendees[0].domain.split('.')[0];\n  }\n  \n  const start = new Date(event.start?.dateTime || event.start?.date);\n  const end = new Date(event.end?.dateTime || event.end?.date);\n  const durationMinutes = (end - start) / 1000 / 60;\n  \n  return {\n    json: {\n      event_id: eventId,\n      summary: event.summary || 'No Title',\n      description: event.description || '',\n      start_time: event.start?.dateTime || event.start?.date,\n      end_time: event.end?.dateTime || event.end?.date,\n      location: event.location || '',\n      meeting_url: event.hangoutLink || '',\n      organizer_email: event.organizer?.email || '',\n      company_name: companyName,\n      attendees: JSON.stringify(attendees),\n      external_attendees: JSON.stringify(externalAttendees),\n      has_external_attendees: externalAttendees.length > 0,\n      external_count: externalAttendees.length,\n      duration_minutes: durationMinutes,\n      is_important: durationMinutes >= 30 && externalAttendees.length > 0,\n      status: event.status || 'confirmed',\n      proposal_status: 'pending',\n      company_urls: '',\n      synced_at: new Date().toISOString()\n    }\n  };\n}).filter(item => item !== null);"
       },
       "name": "Format & Extract Company",
       "type": "n8n-nodes-base.code",
@@ -94,7 +94,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Webhookから受け取ったデータを処理\nconst body = $input.first().json.body;\n\nreturn [{\n  json: {\n    event_id: body.event_id,\n    company_name: body.company_name,\n    company_urls: body.company_urls || [],\n    summary: body.summary,\n    start_time: body.start_time,\n    user_email: body.user_email || 'yannsunn1116@gmail.com'\n  }\n}];"
+        "jsCode": "const body = $input.first().json.body;\n\nreturn [{\n  json: {\n    event_id: body.event_id,\n    company_name: body.company_name,\n    company_urls: body.company_urls || [],\n    summary: body.summary,\n    start_time: body.start_time,\n    user_email: body.user_email || 'yannsunn1116@gmail.com'\n  }\n}];"
       },
       "name": "Parse Webhook Data",
       "type": "n8n-nodes-base.code",
@@ -103,7 +103,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst companyName = data.company_name;\nconst companyUrls = data.company_urls || [];\n\n// URLが提供されている場合の検索クエリ\nlet searchQuery = `${companyName} 企業情報 事業内容 サービス`;\n\nif (companyUrls.length > 0) {\n  searchQuery = `${companyName} site:${companyUrls.join(' OR site:')}`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    search_query: searchQuery,\n    ai_prompt: `以下の企業について詳しく調査し、DX推進の提案を作成してください。\n\n企業名: ${companyName}\n提供URL: ${companyUrls.join(', ') || 'なし'}\n\n以下の観点から具体的な提案を作成してください：\n\n1. **業務効率化ツール**: 業界に最適なツールを具体的に提案\n2. **ホームページ改善**: デザイン、機能、SEOの観点から\n3. **チャットボット導入**: カスタマーサポートや営業支援\n4. **AI活用提案**: 業務プロセスの自動化や分析\n\n各提案には以下を含めてください：\n- 導入メリット（3つ）\n- 想定コスト（概算）\n- 導入期間\n- 具体的な製品・サービス名\n\nJSON形式で構造化して返してください。`\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst companyName = data.company_name;\nconst companyUrls = data.company_urls || [];\n\nlet searchQuery = `${companyName} 企業情報 事業内容 サービス`;\n\nif (companyUrls.length > 0) {\n  searchQuery = `${companyName} site:${companyUrls.join(' OR site:')}`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    search_query: searchQuery,\n    ai_prompt: `以下の企業について詳しく調査し、DX推進の提案を作成してください。\n\n企業名: ${companyName}\n提供URL: ${companyUrls.join(', ') || 'なし'}\n\n以下の観点から具体的な提案を作成してください：\n\n1. **業務効率化ツール**: 業界に最適なツールを具体的に提案\n2. **ホームページ改善**: デザイン、機能、SEOの観点から\n3. **チャットボット導入**: カスタマーサポートや営業支援\n4. **AI活用提案**: 業務プロセスの自動化や分析\n\n各提案には以下を含めてください：\n- 導入メリット（3つ）\n- 想定コスト（概算）\n- 導入期間\n- 具体的な製品・サービス名\n\nJSON形式で構造化して返してください。`\n  }\n}];"
       },
       "name": "Prepare AI Research",
       "type": "n8n-nodes-base.code",
@@ -119,7 +119,7 @@
           "parameters": [
             {
               "name": "key",
-              "value": "={{ $env.GEMINI_API_KEY || 'AIzaSyCsS0hCzYk_ISXO4uzlU91Iz6eOfkLozss' }}"
+              "value": "AIzaSyCsS0hCzYk_ISXO4uzlU91Iz6eOfkLozss"
             }
           ]
         },
@@ -134,7 +134,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: $json.ai_prompt\n    }]\n  }]\n}) }}"
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.ai_prompt }] }] }) }}"
       },
       "name": "Gemini AI Analysis",
       "type": "n8n-nodes-base.httpRequest",
@@ -143,7 +143,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst originalData = $node['Parse Webhook Data'].json;\n\n// AI応答をパース\nlet proposalContent = aiResponse;\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    proposalContent = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  console.log('AI response parsing failed, using raw text');\n}\n\nreturn [{\n  json: {\n    event_id: originalData.event_id,\n    company_name: originalData.company_name,\n    company_urls: JSON.stringify(originalData.company_urls || []),\n    proposal_content: typeof proposalContent === 'object' ? JSON.stringify(proposalContent) : proposalContent,\n    company_analysis: aiResponse.substring(0, 500),\n    generated_at: new Date().toISOString(),\n    status: 'generated'\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst originalData = $node['Parse Webhook Data'].json;\n\nlet proposalContent = aiResponse;\ntry {\n  const jsonMatch = aiResponse.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    proposalContent = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  console.log('AI response parsing failed, using raw text');\n}\n\nreturn [{\n  json: {\n    event_id: originalData.event_id,\n    company_name: originalData.company_name,\n    company_urls: JSON.stringify(originalData.company_urls || []),\n    proposal_content: typeof proposalContent === 'object' ? JSON.stringify(proposalContent) : proposalContent,\n    company_analysis: aiResponse.substring(0, 500),\n    generated_at: new Date().toISOString(),\n    status: 'generated'\n  }\n}];"
       },
       "name": "Format AI Response",
       "type": "n8n-nodes-base.code",
@@ -168,10 +168,6 @@
             {
               "name": "Content-Type",
               "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
             }
           ]
         },
@@ -186,9 +182,9 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst originalData = $node['Parse Webhook Data'].json;\nconst meetingTime = new Date(originalData.start_time);\nconst notificationTime = new Date(meetingTime.getTime() - 3 * 60 * 60 * 1000); // 3時間前\n\nreturn [{\n  json: {\n    to: originalData.user_email,\n    subject: `【3時間前】${originalData.summary} - 提案資料が完成しました`,\n    html: `\n<h2>会議の準備が整いました</h2>\n<p><strong>会議:</strong> ${originalData.summary}</p>\n<p><strong>企業名:</strong> ${originalData.company_name}</p>\n<p><strong>開始時刻:</strong> ${meetingTime.toLocaleString('ja-JP')}</p>\n<p><strong>通知時刻:</strong> ${notificationTime.toLocaleString('ja-JP')} (3時間前)</p>\n\n<h3>提案資料の内容:</h3>\n<pre>${data.company_analysis}</pre>\n\n<p>詳細は<a href=\"https://web-fnjm8qeyq-yasuus-projects.vercel.app\">Webアプリ</a>でご確認ください。</p>\n    `,\n    scheduled_time: notificationTime.toISOString(),\n    event_id: originalData.event_id\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst originalData = $node['Parse Webhook Data'].json;\nconst meetingTime = new Date(originalData.start_time);\nconst notificationTime = new Date(meetingTime.getTime() - 3 * 60 * 60 * 1000);\n\nreturn [{\n  json: {\n    to: originalData.user_email,\n    subject: `【3時間前】${originalData.summary} - 提案資料が完成しました`,\n    html: `<h2>会議の準備が整いました</h2>\n<p><strong>会議:</strong> ${originalData.summary}</p>\n<p><strong>企業名:</strong> ${originalData.company_name}</p>\n<p><strong>開始時刻:</strong> ${meetingTime.toLocaleString('ja-JP')}</p>\n\n<h3>提案資料の内容:</h3>\n<pre>${data.company_analysis}</pre>\n\n<p>詳細は<a href=\"https://web-fnjm8qeyq-yasuus-projects.vercel.app/proposals\">Webアプリ</a>でご確認ください。</p>`,\n    scheduled_time: notificationTime.toISOString(),\n    event_id: originalData.event_id\n  }\n}];"
       },
-      "name": "Prepare Email Notification",
+      "name": "Prepare Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1450, 600]
@@ -209,7 +205,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Proposal generated and notification scheduled', event_id: $json.event_id }) }}"
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Proposal generated', event_id: $json.event_id }) }}"
       },
       "name": "Webhook Response",
       "type": "n8n-nodes-base.respondToWebhook",
@@ -243,9 +239,9 @@
       "main": [[{"node": "Save Proposal", "type": "main", "index": 0}]]
     },
     "Save Proposal": {
-      "main": [[{"node": "Prepare Email Notification", "type": "main", "index": 0}]]
+      "main": [[{"node": "Prepare Email", "type": "main", "index": 0}]]
     },
-    "Prepare Email Notification": {
+    "Prepare Email": {
       "main": [[{"node": "Send Email", "type": "main", "index": 0}]]
     },
     "Send Email": {
