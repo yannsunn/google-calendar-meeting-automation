@@ -54,9 +54,8 @@ export default function ProposalsPage() {
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
 
-      // 外部参加者がいるイベントのみ表示
-      const externalEvents = data.meetings.filter((e: CalendarEvent) => e.has_external_attendees);
-      setEvents(externalEvents);
+      // 全ての会議を表示
+      setEvents(data.meetings || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -168,7 +167,7 @@ export default function ProposalsPage() {
 
       {events.length === 0 ? (
         <Alert severity="info">
-          外部参加者がいる会議がありません。
+          今後7日間の会議がありません。
         </Alert>
       ) : (
         <>
