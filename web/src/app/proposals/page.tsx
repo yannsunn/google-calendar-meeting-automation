@@ -23,8 +23,8 @@ import {
 import { BusinessCenter, CalendarToday, AccessTime, Send, VisibilityOff, Visibility } from '@mui/icons-material';
 
 interface CalendarEvent {
-  event_id: string;
-  summary: string;
+  id: string;
+  title: string;
   description?: string;
   company_name: string;
   start_time: string;
@@ -75,7 +75,7 @@ export default function ProposalsPage() {
       const filteredEvents = (data.meetings || []).filter((e: CalendarEvent) => {
         return !e.duration_minutes || e.duration_minutes > 15;
       });
-      console.log('Loaded events:', filteredEvents.map((e: CalendarEvent) => ({ id: e.event_id, summary: e.summary })));
+      console.log('Loaded events:', filteredEvents.map((e: CalendarEvent) => ({ id: e.id, title: e.title })));
       setEvents(filteredEvents);
     } catch (err: any) {
       setError(err.message);
@@ -138,7 +138,7 @@ export default function ProposalsPage() {
 
     try {
       for (const eventId of Array.from(selectedEvents)) {
-        const event = events.find(e => e.event_id === eventId);
+        const event = events.find(e => e.id === eventId);
         if (!event) continue;
 
         // URLを配列に変換
@@ -153,14 +153,14 @@ export default function ProposalsPage() {
             event_id: eventId,
             company_name: event.company_name,
             company_urls: urls,
-            summary: event.summary,
+            summary: event.title,
             start_time: event.start_time,
             user_email: 'yannsunn1116@gmail.com'
           })
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to generate proposal for ${event.summary}`);
+          throw new Error(`Failed to generate proposal for ${event.title}`);
         }
       }
 
@@ -224,15 +224,15 @@ export default function ProposalsPage() {
         <>
           <Grid container spacing={2}>
             {events
-              .filter(event => showHidden ? hiddenEvents.has(event.event_id) : !hiddenEvents.has(event.event_id))
+              .filter(event => showHidden ? hiddenEvents.has(event.id) : !hiddenEvents.has(event.id))
               .map((event) => {
-                const isHidden = hiddenEvents.has(event.event_id);
+                const isHidden = hiddenEvents.has(event.id);
                 return (
-              <Grid item xs={12} key={event.event_id}>
+              <Grid item xs={12} key={event.id}>
                 <Card
                   sx={{
-                    border: selectedEvents.has(event.event_id) ? 2 : 1,
-                    borderColor: selectedEvents.has(event.event_id) ? 'primary.main' : 'grey.300'
+                    border: selectedEvents.has(event.id) ? 2 : 1,
+                    borderColor: selectedEvents.has(event.id) ? 'primary.main' : 'grey.300'
                   }}
                 >
                   <CardContent>
@@ -240,15 +240,15 @@ export default function ProposalsPage() {
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={selectedEvents.has(event.event_id)}
-                            onChange={() => handleSelectEvent(event.event_id)}
+                            checked={selectedEvents.has(event.id)}
+                            onChange={() => handleSelectEvent(event.id)}
                           />
                         }
                         label=""
                       />
                       <Box sx={{ flexGrow: 1 }}>
                         <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                          {event.summary}
+                          {event.title}
                         </Typography>
 
                         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
@@ -338,9 +338,9 @@ export default function ProposalsPage() {
                           <Button
                             variant="outlined"
                             size="small"
-                            onClick={() => handleOpenUrlDialog(event.event_id)}
+                            onClick={() => handleOpenUrlDialog(event.id)}
                           >
-                            企業URLを追加 ({companyUrls[event.event_id]?.split('\n').filter(u => u.trim()).length || 0}件)
+                            企業URLを追加 ({companyUrls[event.id]?.split('\n').filter(u => u.trim()).length || 0}件)
                           </Button>
                           {isHidden ? (
                             <Button
@@ -348,7 +348,7 @@ export default function ProposalsPage() {
                               size="small"
                               color="success"
                               startIcon={<Visibility />}
-                              onClick={() => handleUnhideEvent(event.event_id)}
+                              onClick={() => handleUnhideEvent(event.id)}
                             >
                               表示
                             </Button>
@@ -358,7 +358,7 @@ export default function ProposalsPage() {
                               size="small"
                               color="warning"
                               startIcon={<VisibilityOff />}
-                              onClick={() => handleHideEvent(event.event_id)}
+                              onClick={() => handleHideEvent(event.id)}
                             >
                               非表示
                             </Button>
