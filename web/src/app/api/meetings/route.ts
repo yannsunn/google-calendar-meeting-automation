@@ -24,24 +24,28 @@ export async function GET(request: NextRequest) {
 
     const query = `
       SELECT
-        m.*,
-        json_agg(DISTINCT jsonb_build_object(
-          'email', a.email,
-          'name', a.name,
-          'company_id', a.company_id,
-          'is_external', a.is_external
-        )) FILTER (WHERE a.id IS NOT NULL) as attendees,
-        json_agg(DISTINCT jsonb_build_object(
-          'id', p.id,
-          'status', p.status,
-          'presentation_url', p.presentation_url
-        )) FILTER (WHERE p.id IS NOT NULL) as proposals
-      FROM meetings m
-      LEFT JOIN attendees a ON m.id = a.meeting_id
-      LEFT JOIN proposals p ON m.id = p.meeting_id
-      WHERE m.start_time >= $1 AND m.start_time < $2
-      GROUP BY m.id
-      ORDER BY m.start_time ASC
+        event_id as id,
+        summary as title,
+        description,
+        start_time,
+        end_time,
+        location,
+        meeting_url,
+        organizer_email,
+        company_name,
+        attendees,
+        external_attendees,
+        has_external_attendees,
+        external_count,
+        duration_minutes,
+        is_important,
+        status,
+        proposal_status,
+        company_urls,
+        synced_at
+      FROM calendar_events
+      WHERE start_time >= $1 AND start_time < $2
+      ORDER BY start_time ASC
     `
 
     const result = await pool.query(query, [start.toISOString(), end.toISOString()])
