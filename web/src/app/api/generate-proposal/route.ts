@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Invalid request data', details: validationResult.error.errors },
+        { error: 'Invalid request data', details: validationResult.error.format() },
         { status: 400 }
       )
     }
@@ -41,15 +41,15 @@ export async function POST(request: NextRequest) {
       const prompt = generateSlides ?
         `以下の企業についてDX推進の提案プレゼンテーションを作成してください。
 
-企業名: ${body.company_name}
-提供URL: ${body.company_urls?.join(', ') || 'なし'}
+企業名: ${sanitizeInput(body.company_name)}
+提供URL: ${body.company_urls?.map(url => sanitizeInput(url)).join(', ') || 'なし'}
 
 以下のJSON形式でスライドデータを返してください：
 {
   "slides": [
     {
       "type": "title",
-      "title": "${body.company_name} 様\\nDX推進提案資料",
+      "title": "${sanitizeInput(body.company_name)} 様\\nDX推進提案資料",
       "date": "${new Date().toLocaleDateString('ja-JP')}"
     },
     {
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
 必ず有効なJSONとして返してください。` :
         `以下の企業について詳しく調査し、DX推進の提案を作成してください。
 
-企業名: ${body.company_name}
-提供URL: ${body.company_urls?.join(', ') || 'なし'}
+企業名: ${sanitizeInput(body.company_name)}
+提供URL: ${body.company_urls?.map(url => sanitizeInput(url)).join(', ') || 'なし'}
 
 以下の観点から具体的な提案を作成してください：
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
                 title: '提案内容',
                 sections: [{
                   heading: 'DX推進提案',
-                  content: proposalText.split('\n').filter(line => line.trim())
+                  content: proposalText.split('\n').filter((line: string) => line.trim())
                 }]
               },
               {
@@ -152,8 +152,14 @@ export async function POST(request: NextRequest) {
           }
 
           // Google Apps Scriptに送信
-          const gasUrl = process.env.GAS_SLIDE_GENERATOR_URL ||
-                        'https://script.google.com/macros/s/AKfycbzN-YourScriptId/exec'
+          const gasUrl = process.env.GAS_SLIDE_GENERATOR_URL
+          if (!gasUrl || gasUrl.includes('YOUR_SCRIPT_ID')) {
+            console.error('GAS_SLIDE_GENERATOR_URL is not configured properly')
+            return NextResponse.json(
+              { error: 'Slide generation service is not configured. Please contact administrator.' },
+              { status: 503 }
+            )
+          }
 
           const gasResponse = await fetch(gasUrl, {
             method: 'POST',

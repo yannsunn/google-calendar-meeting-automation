@@ -86,7 +86,8 @@
       "Bash(API_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzBhM2ZiZi01MDhlLTQ2MGYtOGRjNy1iMGQ1MjJkZGMyZjQiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzYxMTkwMTQ4fQ.laD5cutCvAeQ4qcxsBMXTwSOQmF6Q94ljbVklbxEsKg')",
       "Bash(while read f)",
       "Bash(npm audit:*)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "Bash(npm run setup-calendar:*)"
     ],
     "deny": [],
     "ask": []

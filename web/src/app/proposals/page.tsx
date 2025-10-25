@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Container,
   Typography,
@@ -40,6 +41,7 @@ interface CalendarEvent {
 }
 
 export default function ProposalsPage() {
+  const { data: session } = useSession();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
   const [companyUrls, setCompanyUrls] = useState<{ [key: string]: string }>({});
@@ -79,7 +81,9 @@ export default function ProposalsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/meetings');
+      // 今日から7日間のデータを取得
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/meetings?startDate=${today}&days=7`);
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
 
@@ -169,7 +173,7 @@ export default function ProposalsPage() {
           company_urls: urls,
           summary: event.title,
           start_time: event.start_time,
-          user_email: 'yannsunn1116@gmail.com',
+          user_email: session?.user?.email || undefined,
           preview_mode: true
         })
       });
@@ -221,7 +225,7 @@ export default function ProposalsPage() {
             summary: event.title,
             start_time: event.start_time,
             generate_slides: true, // スライド生成を有効化
-            user_email: 'yannsunn1116@gmail.com'
+            user_email: session?.user?.email || undefined
           })
         });
 

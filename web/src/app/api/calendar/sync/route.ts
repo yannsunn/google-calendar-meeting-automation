@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Google Calendar APIクライアント
     const auth = getOAuth2Client()
-    const calendar = google.calendar({ version: 'v3', auth })
+    const calendar = google.calendar({ version: 'v3', auth: auth as any })
 
     // 日付範囲を設定
     const timeMin = new Date()

@@ -1,10 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Box, Button, Container, Paper, Typography, Alert } from '@mui/material'
 import Link from 'next/link'
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
 
@@ -53,5 +54,23 @@ export default function AuthErrorPage() {
         </Paper>
       </Box>
     </Container>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={
+      <Container maxWidth="sm">
+        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+            <Typography variant="h5" component="h1" align="center">
+              読み込み中...
+            </Typography>
+          </Paper>
+        </Box>
+      </Container>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   )
 }

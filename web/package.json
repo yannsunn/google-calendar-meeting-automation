@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "setup-calendar": "node setup-calendar-auth.js",
+    "sync-calendar": "node sync-calendar.js"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -16,14 +18,16 @@
     "@mui/material": "^5.14.20",
     "@mui/x-data-grid": "^6.18.5",
     "@next-auth/supabase-adapter": "^0.2.1",
-    "@supabase/supabase-js": "^2.58.0",
+    "@supabase/supabase-js": "^2.76.1",
     "@tanstack/react-query": "^5.12.2",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
+    "dotenv": "^17.2.3",
     "googleapis": "^160.0.0",
     "next": "^14.2.33",
     "next-auth": "^4.24.11",
     "pg": "^8.11.3",
+    "puppeteer": "^24.26.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "swr": "^2.2.4",

@@ -1,196 +1,119 @@
-# Google Calendar Meeting Automation System
+# 📅 Googleカレンダータスク通知システム
 
-Google CalendarとN8Nを統合した、AIを活用した打ち合わせ準備の完全自動化システムです。
+AI駆動の会議提案資料自動生成システム
 
-## 主要機能
+## ✨ 機能
 
-- 📅 **自動カレンダー同期**: Google Calendarから会議情報を自動取得
-- 🏢 **企業情報収集**: Web検索APIによる参加企業の自動リサーチ
-  - Googleカレンダー参加者情報からの企業名自動抽出
-  - 企業の業界・規模・事業内容の自動調査
-  - 企業公開情報（ウェブサイト、ニュース等）の収集・要約
-- 🤖 **AI提案生成**: Gemini/Claude APIによる提案内容の自動生成
-  - 業務効率化ツールの提案
-  - ホームページ作成・改善の提案
-  - チャットボット導入の提案
-  - その他AI活用の提案
-  - 企業の業界・規模に応じた最適な提案のカスタマイズ
-- 📊 **プレゼン作成**: Google Slides APIでプレゼンテーション自動作成
-- 📋 **提案資料管理**: 生成された提案の包括的管理
-  - 会議ごとの提案保存・履歴管理
-  - 過去の提案履歴参照機能
-  - 提案の成功/失敗トラッキング
-- 🔄 **リアルタイム更新**: WebSocketによる即時通知と更新
-- ⏰ **事前準備サポート**: 会議前の自動準備機能
-  - 会議前日の自動リマインダー通知
-  - 最新企業情報の再取得・更新
-  - 競合他社動向を含む追加情報の提供
-- 📈 **ダッシュボード**: 会議管理と提案状況の可視化
-
-## 技術スタック
-
-- **ワークフロー**: N8N v1.0+
-- **フロントエンド**: Next.js 14, React 18, Material-UI
-- **バックエンド**: Node.js, Express, Socket.io
-- **データベース**: PostgreSQL 15, Redis 7
-- **AI/ML**: Gemini API, Claude API, Web検索API
-- **PDF生成**: PDFKit, React-PDF
-- **インフラ**: Docker, Docker Compose
-- **監視**: Prometheus, Grafana
+- **Google認証**: Googleアカウントでセキュアログイン
+- **会議データ管理**: Supabaseからリアルタイムで会議情報を取得
+- **AI提案生成**: Gemini APIで高品質な提案内容を自動生成
+- **スライド作成**: Google Apps Scriptで自動的にGoogleスライドを生成
+- **プレビュー機能**: 生成前に提案内容を確認
 
 ## 🚀 クイックスタート
 
-1. `.env.template`を`.env`にコピーして必須項目を設定
-2. Vercelにデプロイ ([https://vercel.com/import](https://vercel.com/import))
-3. 環境変数をVercelに設定
+### 1. 環境変数設定
 
-詳細な設定手順は [COMPLETE_SETUP_GUIDE.md](COMPLETE_SETUP_GUIDE.md) を参照してください。
+`.env.local` を作成：
 
-## 🔑 必要なAPIキー
-
-- **N8N API**: https://n8n.srv946785.hstgr.cloud (設定必須)
-- **Google OAuth**: https://console.cloud.google.com
-- **Gemini API**: https://makersuite.google.com/app/apikey
-- **Claude API**: https://console.anthropic.com (オプション)
-- **Web検索API**: SerpAPI, Bing Search API (企業情報収集用)
-- **Supabase**: https://supabase.com
-
-## 使用方法
-
-### 基本的な流れ
-
-1. **初回セットアップ**
-   - Google Calendar連携設定
-   - 社内ドメインの設定（外部参加者判定用）
-
-2. **日次運用**
-   - 毎朝6時に自動実行
-   - ダッシュボードで会議確認
-   - 必要に応じて手動実行
-
-3. **会議準備**
-   - チェックボックスで対象会議を選択
-   - 「提案資料生成」ボタンで資料作成開始
-   - 生成された資料をGoogle Slidesで確認
-   - PDFエクスポートで提案資料を配布用に出力
-   - 過去の提案履歴と成果を参照して改善
-
-## アーキテクチャ
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Google    │◄────│     N8N     │────►│   Web App   │
-│  Calendar   │     │  Workflows  │     │  (Next.js)  │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │                     │
-                           ▼                     ▼
-                    ┌─────────────┐     ┌─────────────┐
-                    │ PostgreSQL  │     │  WebSocket  │
-                    │   Database  │     │   Server    │
-                    └─────────────┘     └─────────────┘
-                           │                     │
-                           ▼                     ▼
-                    ┌─────────────┐     ┌─────────────┐
-                    │    Redis    │     │   Clients   │
-                    │    Cache    │     │  (Browser)  │
-                    └─────────────┘     └─────────────┘
-```
-
-## N8Nワークフロー
-
-### 1. Daily Meeting Sync
-- 毎朝6時に実行
-- Google Calendarから当日の会議取得
-- データベースに保存
-- 外部参加者がいる会議を検出
-
-### 2. Company Research & AI Proposal Generation
-- 参加企業の情報をWeb検索APIで収集
-- AI分析で企業概要作成
-- 業界・規模に応じたカスタマイズ提案生成:
-  - 業務効率化ツールの提案
-  - ホームページ作成・改善提案
-  - チャットボット導入提案
-  - AI活用提案
-- Google Slidesでプレゼン作成
-- PDFエクスポート機能で資料出力
-- 提案履歴と成果トラッキング
-
-### 3. Pre-Meeting Preparation Support
-- 会議前日の自動リマインダー通知
-- 最新企業情報の再取得・更新
-- 競合他社動向を含む追加情報提供
-
-## トラブルシューティング
-
-### よくある問題と解決方法
-
-**Q: N8Nが起動しない**
-A: PostgreSQLの起動を確認してください
 ```bash
-docker-compose logs postgres
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+
+# Gemini AI
+GEMINI_API_KEY=your_gemini_api_key
+
+# NextAuth
+NEXTAUTH_URL=https://your-domain.vercel.app
+NEXTAUTH_SECRET=your_random_secret
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Google Apps Script
+GAS_SLIDE_GENERATOR_URL=your_gas_url
 ```
 
-**Q: Google Calendar連携エラー**
-A: OAuth認証を再設定してください
+### 2. インストールと起動
+
 ```bash
-# N8N管理画面で認証情報を再設定
+cd web
+npm install
+npm run dev
 ```
 
-**Q: AI API制限エラー**
-A: APIキーの利用制限を確認し、必要に応じてアップグレード
+### 3. Google Apps Script設定
 
-## 監視とメトリクス
+1. https://script.google.com にアクセス
+2. 新規プロジェクト作成
+3. `gas-slide-generator/Code.gs` の内容をコピー
+4. デプロイ → ウェブアプリとして公開
+5. URLを `GAS_SLIDE_GENERATOR_URL` に設定
 
-### Prometheus
-- http://localhost:9090
-- メトリクス収集と監視
+## 📁 プロジェクト構造
 
-### Grafana
-- http://localhost:3002
-- ダッシュボードでの可視化
-- デフォルトパスワード: `.env`で設定
+```
+├── web/                      # Next.js アプリケーション
+│   ├── src/
+│   │   ├── app/             # App Router
+│   │   ├── components/      # Reactコンポーネント
+│   │   └── lib/            # ユーティリティ
+│   └── package.json
+├── gas-slide-generator/     # Google Apps Script
+│   └── Code.gs             # スライド生成スクリプト
+└── .env                    # 環境変数
 
-## バックアップ
-
-### データベースバックアップ
-```bash
-docker exec postgres pg_dump -U meeting_automation meeting_automation_db > backup.sql
 ```
 
-### N8Nワークフローバックアップ
-```bash
-# N8N管理画面からエクスポート
-```
+## 🔧 技術スタック
 
-## 🔒 セキュリティと信頼性
+- **フロントエンド**: Next.js 14, React, TypeScript, Material UI
+- **バックエンド**: Next.js API Routes
+- **データベース**: Supabase (PostgreSQL)
+- **AI**: Google Gemini API
+- **認証**: NextAuth.js (Google OAuth)
+- **スライド生成**: Google Apps Script
+- **デプロイ**: Vercel
 
-### 最新の改善 (2025-10-18)
+## 🔒 セキュリティ
 
-✅ **OAuth トークン自動リフレッシュ** - セッション継続性を確保
-✅ **レート制限** - DDoS攻撃から保護（100リクエスト/分）
-✅ **環境変数検証** - 起動時に必須設定をチェック
-✅ **構造化ログ** - 問題の早期発見と追跡
-✅ **改善されたエラーハンドリング** - 詳細なエラー情報
+- **認証**: Google OAuth 2.0
+- **CSP**: Content Security Policy 実装
+- **HSTS**: Strict Transport Security 有効
+- **入力検証**: Zodによるスキーマ検証
+- **レート制限**: API保護
 
-詳細は [IMPROVEMENTS.md](IMPROVEMENTS.md) を参照してください。
+## 📝 使い方
 
-### セキュリティベストプラクティス
+1. **ログイン**: Googleアカウントでログイン
+2. **会議選択**: ダッシュボードから会議を選択
+3. **プレビュー**: 「プレビュー生成」で内容確認
+4. **スライド生成**: 「提案資料を生成」でGoogleスライド作成
 
-- すべての通信はHTTPS化推奨
-- APIキーは環境変数で管理
-- データベースアクセスは内部ネットワークのみ
-- 定期的なセキュリティアップデート実施
-- レート制限によるリソース保護
+## 🐛 トラブルシューティング
 
-## ライセンス
+### ログインできない
+- Google Cloud ConsoleでリダイレクトURIを確認
+- `NEXTAUTH_URL` が正しく設定されているか確認
 
-MIT License
+### スライドが生成されない
+- `GAS_SLIDE_GENERATOR_URL` が設定されているか確認
+- Google Apps Scriptの実行権限を確認
 
-## サポート
+### プレビューが表示されない
+- `GEMINI_API_KEY` が有効か確認
+- Gemini API利用制限を確認
 
-問題が発生した場合は、Issueを作成してください。
+## 📄 ライセンス
 
-## 貢献
+MIT
 
-プルリクエストを歓迎します。大きな変更の場合は、まずIssueを作成して変更内容を説明してください。
+## 👤 作成者
+
+yannsunn1116@gmail.com
+
+---
+
+最終更新: 2025-10-25

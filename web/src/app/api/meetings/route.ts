@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -6,7 +7,7 @@ export async function GET(request: NextRequest) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      console.warn('Supabase credentials not configured')
+      logger.warn('Supabase credentials not configured')
       return NextResponse.json({ meetings: [] })
     }
 
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
 
     const events = await response.json()
 
+    // デバッグ: 取得したイベント数をログ出力
+    logger.info(`Retrieved ${events.length} events from Supabase`, {
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      days: days
+    })
+
     // フィールド名をフロントエンドに合わせて変換
     const meetings = events.map((event: any) => ({
       id: event.event_id,
@@ -62,7 +70,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ meetings })
   } catch (error: any) {
-    console.error('Error fetching meetings:', error)
+    logger.apiError({
+      endpoint: '/api/meetings',
+      method: 'GET',
+      error: error
+    })
     return NextResponse.json(
       { error: 'Failed to fetch meetings', details: error.message, meetings: [] },
       { status: 500 }
@@ -108,7 +120,11 @@ export async function POST(request: NextRequest) {
       message: 'Event created successfully'
     })
   } catch (error: any) {
-    console.error('Error creating event:', error)
+    logger.apiError({
+      endpoint: '/api/meetings',
+      method: 'POST',
+      error: error
+    })
     return NextResponse.json(
       { error: 'Failed to create event', details: error.message },
       { status: 500 }
