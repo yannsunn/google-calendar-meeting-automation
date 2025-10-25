@@ -59,44 +59,10 @@ export default function Dashboard() {
   ).size
 
   const handleGenerateProposals = async () => {
-    setProcessingWorkflow(true)
-    try {
-      // 有効な会議のIDを取得
-      const enabledMeetings = todayMeetings.filter(m => m.is_enabled)
-      const meetingIds = enabledMeetings.map(m => m.id)
-
-      if (meetingIds.length === 0) {
-        alert('提案を生成する会議を選択してください')
-        return
-      }
-
-      // APIを呼び出し
-      const response = await fetch('/api/workflows/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          meetingIds,
-          workflowId: 'final-ai-agent-workflow'
-        })
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to trigger workflow')
-      }
-
-      // 成功メッセージ
-      alert(`提案資料の生成を開始しました。\n成功: ${result.triggered}件\n失敗: ${result.failed}件`)
-
-      // データを再取得
-      await refetch()
-    } catch (err) {
-      console.error('Error triggering workflow:', err)
-      alert(`エラーが発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`)
-    } finally {
-      setProcessingWorkflow(false)
-    }
+    // 現在、このページでは会議の選択機能が正しく実装されていません
+    // /proposals ページを使用してください
+    alert('提案資料の生成は /proposals ページから行ってください')
+    window.location.href = '/proposals'
   }
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -221,7 +187,7 @@ export default function Dashboard() {
               variant="contained"
               startIcon={<AutoAwesome />}
               onClick={handleGenerateProposals}
-              disabled={processingWorkflow || todayMeetings.filter(m => m.is_enabled).length === 0}
+              disabled={processingWorkflow}
             >
               {processingWorkflow ? '生成中...' : '提案資料生成'}
             </Button>

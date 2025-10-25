@@ -35,7 +35,7 @@ interface MeetingListProps {
 
 export default function MeetingList({ meetings }: MeetingListProps) {
   const [selectedMeetings, setSelectedMeetings] = useState<Set<string>>(
-    new Set(meetings.filter(m => m.is_enabled).map(m => m.id))
+    new Set() // 初期状態では何も選択しない
   )
 
   const handleToggleMeeting = async (meetingId: string) => {
@@ -47,15 +47,8 @@ export default function MeetingList({ meetings }: MeetingListProps) {
     }
     setSelectedMeetings(newSelected)
 
-    try {
-      await fetch(`/api/meetings/${meetingId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_enabled: newSelected.has(meetingId) })
-      })
-    } catch (error) {
-      console.error('Failed to update meeting status:', error)
-    }
+    // APIコールは削除 - チェックボックスの状態はローカルで管理
+    // 将来的にバックエンドでの永続化が必要な場合は、適切なAPIエンドポイントを作成する
   }
 
   const formatTime = (startTime: string, endTime: string) => {
