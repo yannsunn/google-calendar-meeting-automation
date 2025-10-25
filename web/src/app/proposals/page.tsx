@@ -486,25 +486,144 @@ export default function ProposalsPage() {
 
       {/* プレビューダイアログ */}
       <Dialog open={previewDialogOpen} onClose={() => setPreviewDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>提案資料プレビュー</DialogTitle>
+        <DialogTitle>
+          提案資料プレビュー
+          {previewContent?.company_name && (
+            <Typography variant="body2" color="text.secondary">
+              {previewContent.company_name}
+            </Typography>
+          )}
+        </DialogTitle>
         <DialogContent>
           {previewContent ? (
             <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                生成された提案資料の内容:
-              </Typography>
-              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, maxHeight: '60vh', overflow: 'auto' }}>
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontFamily: 'inherit' }}>
-                  {JSON.stringify(previewContent, null, 2)}
-                </pre>
-              </Box>
+              {/* 企業分析 */}
+              {previewContent.company_analysis && (
+                <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.50', borderRadius: 1, borderLeft: 4, borderColor: 'primary.main' }}>
+                  <Typography variant="subtitle2" color="primary.main" gutterBottom>
+                    企業分析
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.company_analysis}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* 提案内容（Markdown形式で表示） */}
+              {previewContent.proposal_content && (
+                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    DX推進提案資料
+                  </Typography>
+                  <Box sx={{
+                    mt: 2,
+                    '& h2': { fontSize: '1.5rem', fontWeight: 'bold', mt: 2, mb: 1 },
+                    '& h3': { fontSize: '1.25rem', fontWeight: 'bold', mt: 2, mb: 1, color: 'primary.main' },
+                    '& ul': { pl: 3, mt: 1, mb: 1 },
+                    '& li': { mb: 0.5 }
+                  }}>
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}
+                      dangerouslySetInnerHTML={{
+                        __html: (() => {
+                          const lines = previewContent.proposal_content.split('\n');
+                          let html = '';
+                          let inList = false;
+
+                          lines.forEach((line: string, index: number) => {
+                            if (line.startsWith('## ')) {
+                              if (inList) {
+                                html += '</ul>';
+                                inList = false;
+                              }
+                              html += `<h2>${line.substring(3)}</h2>`;
+                            } else if (line.startsWith('### ')) {
+                              if (inList) {
+                                html += '</ul>';
+                                inList = false;
+                              }
+                              html += `<h3>${line.substring(4)}</h3>`;
+                            } else if (line.startsWith('- ')) {
+                              if (!inList) {
+                                html += '<ul>';
+                                inList = true;
+                              }
+                              html += `<li>${line.substring(2)}</li>`;
+                            } else {
+                              if (inList) {
+                                html += '</ul>';
+                                inList = false;
+                              }
+                              if (line.trim()) {
+                                html += line + '\n';
+                              }
+                            }
+                          });
+
+                          if (inList) {
+                            html += '</ul>';
+                          }
+
+                          return html;
+                        })()
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+
+              {/* スライドリンク */}
+              {previewContent.slide_url && (
+                <Box sx={{ mt: 3, p: 2, bgcolor: 'success.50', borderRadius: 1, borderLeft: 4, borderColor: 'success.main' }}>
+                  <Typography variant="subtitle2" color="success.main" gutterBottom>
+                    プレゼンテーションスライド
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Googleスライドが生成されました（{previewContent.slide_count || 0}枚）
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    href={previewContent.slide_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Googleスライドを開く
+                  </Button>
+                </Box>
+              )}
+
+              {/* メタ情報 */}
+              {previewContent.generated_at && (
+                <Box sx={{ mt: 2, textAlign: 'right' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    生成日時: {new Date(previewContent.generated_at).toLocaleString('ja-JP')}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* デバッグ用：Raw JSON（開発時のみ表示） */}
+              {process.env.NODE_ENV === 'development' && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="caption" color="text.secondary" gutterBottom>
+                    デバッグ情報（開発環境のみ）:
+                  </Typography>
+                  <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1, maxHeight: '200px', overflow: 'auto' }}>
+                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontSize: '0.75rem' }}>
+                      {JSON.stringify(previewContent, null, 2)}
+                    </pre>
+                  </Box>
+                </Box>
+              )}
             </Box>
           ) : (
             <Typography>プレビューデータがありません</Typography>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewDialogOpen(false)}>閉じる</Button>
+          <Button onClick={() => setPreviewDialogOpen(false)} variant="contained">閉じる</Button>
         </DialogActions>
       </Dialog>
     </Container>
