@@ -58,7 +58,8 @@ export default function ProposalsPage() {
   const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
-    fetchEvents();
+    // 初回ロード時に自動同期してからイベントを取得
+    autoSyncAndFetch();
     // localStorageから非表示リストを読み込む
     const stored = localStorage.getItem('hiddenEvents');
     if (stored) {
@@ -78,6 +79,44 @@ export default function ProposalsPage() {
       }
     }
   }, []);
+
+  // 自動同期してからイベントを取得
+  const autoSyncAndFetch = async () => {
+    try {
+      setLoading(true);
+
+      // 最後の同期時刻をチェック
+      const lastSync = localStorage.getItem('lastCalendarSync');
+      const now = Date.now();
+      const SYNC_INTERVAL = 2 * 24 * 60 * 60 * 1000; // 2日
+
+      // 2日以内に同期済みの場合はスキップ
+      if (lastSync && now - parseInt(lastSync) < SYNC_INTERVAL) {
+        const lastSyncDate = new Date(parseInt(lastSync)).toLocaleString('ja-JP');
+        console.log(`📅 最近同期済み（2日以内: ${lastSyncDate}）- スキップ`);
+        await fetchEvents();
+        return;
+      }
+
+      // カレンダーを自動同期
+      console.log('🔄 カレンダーを自動同期中...');
+      const syncResponse = await fetch('/api/calendar/auto-sync', {
+        method: 'POST',
+      });
+
+      if (syncResponse.ok) {
+        localStorage.setItem('lastCalendarSync', now.toString());
+        console.log('✅ カレンダー同期完了 - 次回同期: 2日後');
+      }
+
+      // イベントを取得
+      await fetchEvents();
+    } catch (err: any) {
+      console.error('自動同期エラー:', err);
+      // エラーが発生してもイベントは取得
+      await fetchEvents();
+    }
+  };
 
   const fetchEvents = async () => {
     try {

@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd web && npm run build",
+  "devCommand": "cd web && npm run dev",
+  "installCommand": "cd web && npm install",
+  "outputDirectory": "web/.next",
+  "public": true,
+  "github": {
+    "enabled": false
+  }
+}
