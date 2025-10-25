@@ -200,6 +200,8 @@ export default function ProposalsPage() {
     setSuccess('');
 
     try {
+      const results: any[] = [];
+
       for (const eventId of Array.from(selectedEvents)) {
         const event = events.find(e => e.id === eventId);
         if (!event) continue;
@@ -218,6 +220,7 @@ export default function ProposalsPage() {
             company_urls: urls,
             summary: event.title,
             start_time: event.start_time,
+            generate_slides: true, // スライド生成を有効化
             user_email: 'yannsunn1116@gmail.com'
           })
         });
@@ -225,9 +228,26 @@ export default function ProposalsPage() {
         if (!response.ok) {
           throw new Error(`Failed to generate proposal for ${event.title}`);
         }
+
+        const result = await response.json();
+        results.push(result);
       }
 
-      setSuccess(`${selectedEvents.size}件の提案資料を生成しました。3時間前にメール通知が届きます。`);
+      // 成功メッセージとスライドURLを表示
+      const slideUrls = results
+        .filter(r => r.slide_url)
+        .map(r => r.slide_url);
+
+      if (slideUrls.length > 0) {
+        setSuccess(`${selectedEvents.size}件の提案資料を生成しました。`);
+        // 最初のスライドURLを開く（オプション）
+        if (slideUrls.length === 1) {
+          window.open(slideUrls[0], '_blank');
+        }
+      } else {
+        setSuccess(`${selectedEvents.size}件の提案資料を処理しました。`);
+      }
+
       setSelectedEvents(new Set());
       // 企業URLは保持する（削除しない）
 
