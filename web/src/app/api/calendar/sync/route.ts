@@ -8,18 +8,9 @@ const pool = new Pool({
 
 // Google Calendar OAuth2クライアントの作成
 function getOAuth2Client() {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  )
-
-  oauth2Client.setCredentials({
-    access_token: process.env.GOOGLE_ACCESS_TOKEN,
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-  })
-
-  return oauth2Client
+  // 現在、Google Calendar同期は無効化されています
+  // 再有効化するには、新しいアクセストークンとリフレッシュトークンが必要です
+  throw new Error('Google Calendar sync is currently disabled. Please re-authenticate to enable.')
 }
 
 export async function POST(request: NextRequest) {

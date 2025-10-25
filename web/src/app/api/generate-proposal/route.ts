@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { proposalRequestSchema, rateLimiter, sanitizeInput } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // レート制限チェック
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown'
+    if (!rateLimiter.isAllowed(clientIp)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
+    // リクエストボディの検証
+    const rawBody = await request.json()
+    const validationResult = proposalRequestSchema.safeParse(rawBody)
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: validationResult.error.errors },
+        { status: 400 }
+      )
+    }
+
+    const body = validationResult.data
     const isPreview = body.preview_mode === true
     const generateSlides = body.generate_slides === true
 
